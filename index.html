@@ -118,9 +118,7 @@
             Having trouble connecting, trying again...
         </div>
         <main id="canvas-container">
-            <div id="canvas-placeholder">
-                <p>Welcome to TaDa List! Board canvas coming in Phase 3.</p>
-            </div>
+            <canvas id="board-canvas"></canvas>
         </main>
         <button id="add-note-btn" class="floating-btn floating-btn-right" title="Add a sticky note">&#128211;</button>
         <div id="zoom-controls" class="zoom-widget">
@@ -152,8 +150,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/board.js"></script>
     <script>
         function setupToggle(btnId, inputId) {
             document.getElementById(btnId).addEventListener('click', function() {
