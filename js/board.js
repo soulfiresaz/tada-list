@@ -87,8 +87,8 @@ var Board = {
         );
 
         dividerLine.setControlsVisibility({
-            mt: false,
-            mb: false,
+            mt: true,
+            mb: true,
             ml: false,
             mr: false,
             bl: false,
