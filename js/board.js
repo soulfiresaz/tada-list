@@ -27,8 +27,77 @@ var Board = {
         this.setupPinchZoom();
         this.setupResize();
         this.updateZoomDisplay();
+        this.placeDefaultElements();
 
         console.log('Board initialized: ' + width + 'x' + height);
+    },
+
+    placeDefaultElements: function() {
+        var canvasWidth = this.canvas.getWidth();
+        var canvasHeight = this.canvas.getHeight();
+
+        var todoLabel = new fabric.IText('To Do', {
+            left: canvasWidth * 0.2,
+            top: 40,
+            fontFamily: 'Fredoka One',
+            fontSize: 42,
+            fill: '#FFD700',
+            shadow: '2px 2px 4px rgba(0,0,0,0.3)',
+            editable: true,
+            selectable: true,
+            hasControls: true,
+            hasBorders: true,
+            customType: 'label',
+            customId: 'todo-label'
+        });
+
+        var tadaLabel = new fabric.IText('Ta Da', {
+            left: canvasWidth * 0.7,
+            top: 40,
+            fontFamily: 'Fredoka One',
+            fontSize: 42,
+            fill: '#2ED573',
+            shadow: '2px 2px 4px rgba(0,0,0,0.3)',
+            editable: true,
+            selectable: true,
+            hasControls: true,
+            hasBorders: true,
+            customType: 'label',
+            customId: 'tada-label'
+        });
+
+        var dividerLine = new fabric.Line(
+            [canvasWidth / 2, 20, canvasWidth / 2, canvasHeight - 20],
+            {
+                stroke: '#6C6C8A',
+                strokeWidth: 3,
+                strokeDashArray: [8, 4],
+                selectable: true,
+                hasControls: true,
+                hasBorders: true,
+                lockScalingX: false,
+                lockScalingY: false,
+                customType: 'divider',
+                customId: 'divider-line'
+            }
+        );
+
+        dividerLine.setControlsVisibility({
+            mt: false,
+            mb: false,
+            ml: false,
+            mr: false,
+            bl: false,
+            br: false,
+            tl: false,
+            tr: false,
+            mtr: true
+        });
+
+        this.canvas.add(dividerLine);
+        this.canvas.add(todoLabel);
+        this.canvas.add(tadaLabel);
+        this.canvas.renderAll();
     },
 
     setupZoomControls: function() {
@@ -75,6 +144,8 @@ var Board = {
             var evt = opt.e;
             self.isPanning = true;
             self.canvas.selection = false;
+            self.canvas.discardActiveObject();
+            self.canvas.requestRenderAll();
 
             if (evt.touches && evt.touches.length === 1) {
                 self.lastPanX = evt.touches[0].clientX;
