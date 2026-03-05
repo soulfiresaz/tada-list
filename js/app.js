@@ -13,6 +13,7 @@ var App = {
         this.setupTabCloseWarning();
 
         Board.init();
+        Notes.init();
 
         console.log('TaDa List v1.0.0 initialized');
         console.log('Input type: ' + this.inputType);
