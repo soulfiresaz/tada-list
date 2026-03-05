@@ -7,6 +7,10 @@ var Board = {
     isPanning: false,
     lastPanX: 0,
     lastPanY: 0,
+    undoStack: [],
+    redoStack: [],
+    maxHistory: 20,
+    trackingChanges: true,
 
     init: function() {
         var container = document.getElementById('canvas-container');
@@ -26,6 +30,8 @@ var Board = {
         this.setupPanning();
         this.setupPinchZoom();
         this.setupResize();
+        this.setupUndoRedo();
+        this.setupDeleteProtection();
         this.updateZoomDisplay();
         this.placeDefaultElements();
 
@@ -75,8 +81,6 @@ var Board = {
                 selectable: true,
                 hasControls: true,
                 hasBorders: true,
-                lockScalingX: false,
-                lockScalingY: false,
                 customType: 'divider',
                 customId: 'divider-line'
             }
@@ -98,6 +102,179 @@ var Board = {
         this.canvas.add(todoLabel);
         this.canvas.add(tadaLabel);
         this.canvas.renderAll();
+    },
+
+    setupDeleteProtection: function() {
+        var self = this;
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                var active = self.canvas.getActiveObject();
+                if (active && active.customType === 'divider') {
+                    e.preventDefault();
+                    App.showToast('The divider line cannot be deleted.');
+                    return;
+                }
+                if (active && !active.isEditing) {
+                    e.preventDefault();
+                }
+            }
+        });
+    },
+
+    setupUndoRedo: function() {
+        var self = this;
+
+        this.canvas.on('object:modified', function(opt) {
+            if (!self.trackingChanges) return;
+            self.saveState(opt.target, 'modified');
+        });
+
+        this.canvas.on('object:moving', function(opt) {
+            if (!opt.target._originalState) {
+                opt.target._originalState = {
+                    left: opt.target._stateProperties ? opt.target._stateProperties.left : opt.target.left,
+                    top: opt.target._stateProperties ? opt.target._stateProperties.top : opt.target.top
+                };
+            }
+        });
+
+        document.getElementById('undo-btn').addEventListener('click', function() {
+            self.undo();
+        });
+
+        document.getElementById('redo-btn').addEventListener('click', function() {
+            self.redo();
+        });
+    },
+
+    saveState: function(target, action) {
+        if (!target) return;
+
+        var state = {
+            target: target,
+            action: action,
+            properties: {
+                left: target.left,
+                top: target.top,
+                scaleX: target.scaleX,
+                scaleY: target.scaleY,
+                angle: target.angle,
+                flipX: target.flipX,
+                flipY: target.flipY
+            }
+        };
+
+        if (target._originalState) {
+            state.previous = {
+                left: target._originalState.left,
+                top: target._originalState.top,
+                scaleX: target._originalState.scaleX || target.scaleX,
+                scaleY: target._originalState.scaleY || target.scaleY,
+                angle: target._originalState.angle || target.angle,
+                flipX: target._originalState.flipX !== undefined ? target._originalState.flipX : target.flipX,
+                flipY: target._originalState.flipY !== undefined ? target._originalState.flipY : target.flipY
+            };
+            delete target._originalState;
+        }
+
+        this.undoStack.push(state);
+        if (this.undoStack.length > this.maxHistory) {
+            this.undoStack.shift();
+        }
+
+        this.redoStack = [];
+        this.updateUndoRedoButtons();
+    },
+
+    undo: function() {
+        if (this.undoStack.length === 0) return;
+
+        var state = this.undoStack.pop();
+        var target = state.target;
+
+        var currentProps = {
+            left: target.left,
+            top: target.top,
+            scaleX: target.scaleX,
+            scaleY: target.scaleY,
+            angle: target.angle,
+            flipX: target.flipX,
+            flipY: target.flipY
+        };
+
+        if (state.previous) {
+            this.trackingChanges = false;
+            target.set(state.previous);
+            target.setCoords();
+            this.canvas.renderAll();
+            this.trackingChanges = true;
+        }
+
+        this.redoStack.push({
+            target: target,
+            action: state.action,
+            properties: currentProps,
+            previous: state.previous
+        });
+
+        this.updateUndoRedoButtons();
+    },
+
+    redo: function() {
+        if (this.redoStack.length === 0) return;
+
+        var state = this.redoStack.pop();
+        var target = state.target;
+
+        var currentProps = {
+            left: target.left,
+            top: target.top,
+            scaleX: target.scaleX,
+            scaleY: target.scaleY,
+            angle: target.angle,
+            flipX: target.flipX,
+            flipY: target.flipY
+        };
+
+        this.trackingChanges = false;
+        target.set(state.properties);
+        target.setCoords();
+        this.canvas.renderAll();
+        this.trackingChanges = true;
+
+        this.undoStack.push({
+            target: target,
+            action: state.action,
+            properties: state.properties,
+            previous: currentProps
+        });
+
+        this.updateUndoRedoButtons();
+    },
+
+    updateUndoRedoButtons: function() {
+        document.getElementById('undo-btn').disabled = this.undoStack.length === 0;
+        document.getElementById('redo-btn').disabled = this.redoStack.length === 0;
+    },
+
+    flipSelected: function(direction) {
+        var active = this.canvas.getActiveObject();
+        if (!active) return;
+
+        active._originalState = {
+            flipX: active.flipX,
+            flipY: active.flipY
+        };
+
+        if (direction === 'horizontal') {
+            active.set('flipX', !active.flipX);
+        } else if (direction === 'vertical') {
+            active.set('flipY', !active.flipY);
+        }
+
+        this.canvas.renderAll();
+        this.saveState(active, 'flip');
     },
 
     setupZoomControls: function() {
