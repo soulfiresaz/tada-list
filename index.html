@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TaDa List</title>
+
+    <!-- Google Fonts - Placeholder display font + body font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <!-- App Stylesheets -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/panels.css">
+</head>
+<body>
+
+    <!-- ============================================ -->
+    <!-- LOGIN SCREEN -->
+    <!-- ============================================ -->
+    <div id="login-screen" class="screen active">
+        <div class="login-container">
+            <h1 class="app-title">TaDa List</h1>
+            <p class="app-tagline" id="login-tagline">Your personal productivity board</p>
+
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
+                </div>
+                <button id="login-btn" class="btn-primary" onclick="Auth.login()">Log In</button>
+                <div class="auth-links">
+                    <a href="#" onclick="Auth.showSignUp(); return false;">Sign Up</a>
+                    <a href="#" onclick="Auth.forgotPassword(); return false;">Forgot Password?</a>
+                </div>
+                <p id="login-error" class="error-msg" style="display:none;"></p>
+            </div>
+
+            <!-- Sign Up Form (shown when user clicks Sign Up) -->
+            <div id="signup-form" class="auth-form" style="display:none;">
+                <p class="signup-notice">Registration is invite-only. If you received an invitation, enter your details below.</p>
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" placeholder="Choose a password (min 6 characters)" autocomplete="new-password">
+                </div>
+                <button id="signup-btn" class="btn-primary" onclick="Auth.signUp()">Sign Up</button>
+                <div class="auth-links">
+                    <a href="#" onclick="Auth.showLogin(); return false;">Back to Log In</a>
+                </div>
+                <p id="signup-error" class="error-msg" style="display:none;"></p>
+            </div>
+
+            <!-- Forgot Password Form -->
+            <div id="forgot-form" class="auth-form" style="display:none;">
+                <p class="signup-notice">Enter your email and we'll send you a link to reset your password.</p>
+                <div class="form-group">
+                    <label for="forgot-email">Email</label>
+                    <input type="email" id="forgot-email" placeholder="you@example.com" autocomplete="email">
+                </div>
+                <button id="forgot-btn" class="btn-primary" onclick="Auth.sendPasswordReset()">Send Reset Link</button>
+                <div class="auth-links">
+                    <a href="#" onclick="Auth.showLogin(); return false;">Back to Log In</a>
+                </div>
+                <p id="forgot-error" class="error-msg" style="display:none;"></p>
+                <p id="forgot-success" class="success-msg" style="display:none;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- QUICK LOCK SCREEN -->
+    <!-- ============================================ -->
+    <div id="lock-screen" class="screen">
+        <div class="login-container">
+            <h1 class="app-title">TaDa List</h1>
+            <p class="lock-info">Locked — enter your password to continue</p>
+            <p class="lock-email" id="lock-email-display"></p>
+            <div class="form-group">
+                <input type="password" id="lock-password" placeholder="Password" autocomplete="current-password">
+            </div>
+            <button class="btn-primary" onclick="Auth.unlock()">Unlock</button>
+            <div class="auth-links">
+                <a href="#" onclick="Auth.fullLogout(); return false;">Log out completely</a>
+            </div>
+            <p id="lock-error" class="error-msg" style="display:none;"></p>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- LOADING SCREEN -->
+    <!-- ============================================ -->
+    <div id="loading-screen" class="screen">
+        <div class="loading-container">
+            <h1 class="app-title">TaDa List</h1>
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- MAIN APP -->
+    <!-- ============================================ -->
+    <div id="app-screen" class="screen">
+
+        <!-- Top Bar -->
+        <header id="top-bar">
+            <div class="top-bar-left">
+                <button id="board-name-btn" class="board-name" title="Click to switch boards, double-click to rename">
+                    <span id="board-name-text">My Board</span>
+                    <span class="dropdown-arrow">▼</span>
+                </button>
+                <span id="board-counter" class="board-counter">1 of 1</span>
+                <button id="add-board-btn" class="icon-btn" title="Add new board">+</button>
+            </div>
+            <div class="top-bar-right">
+                <button id="search-btn" class="icon-btn" title="Search">🔍</button>
+                <button id="theme-btn" class="icon-btn" title="Theme picker">🎨</button>
+                <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+                <button id="overflow-btn" class="icon-btn overflow-btn" title="More" style="display:none;">⋯</button>
+            </div>
+        </header>
+
+        <!-- Connection Status Bar -->
+        <div id="connection-bar" class="connection-bar" style="display:none;">
+            Having trouble connecting, trying again…
+        </div>
+
+        <!-- Main Canvas Area -->
+        <main id="canvas-container">
+            <!-- Fabric.js canvas will be initialized here in Phase 3 -->
+            <div id="canvas-placeholder">
+                <p>Board canvas loading in Phase 3...</p>
+            </div>
+        </main>
+
+        <!-- Floating Add Note Button (Bottom Right) -->
+        <button id="add-note-btn" class="floating-btn floating-btn-right" title="Add a sticky note">
+            🗒️
+        </button>
+
+        <!-- Zoom Controls (Bottom Left) -->
+        <div id="zoom-controls" class="zoom-widget">
+            <button id="zoom-out-btn" class="zoom-btn" title="Zoom out">−</button>
+            <button id="zoom-level" class="zoom-level" title="Click to reset to 100%">100%</button>
+            <button id="zoom-in-btn" class="zoom-btn" title="Zoom in">+</button>
+        </div>
+
+        <!-- Undo/Redo (Bottom Center) -->
+        <div id="undo-redo" class="undo-redo-widget">
+            <button id="undo-btn" class="undo-redo-btn" title="Undo" disabled>↩️</button>
+            <button id="redo-btn" class="undo-redo-btn" title="Redo" disabled>↪️</button>
+        </div>
+
+        <!-- Sync Button -->
+        <button id="sync-btn" class="sync-btn" title="Sync now">🔄</button>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!-- TOAST NOTIFICATION -->
+    <!-- ============================================ -->
+    <div id="toast" class="toast" style="display:none;">
+        <span id="toast-message"></span>
+        <button id="toast-undo" class="toast-undo" style="display:none;" onclick="App.undoToast()">Undo</button>
+        <button class="toast-close" onclick="App.hideToast()">✕</button>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- CONFIRMATION POPUP -->
+    <!-- ============================================ -->
+    <div id="confirm-popup" class="popup-overlay" style="display:none;">
+        <div class="popup-box">
+            <p id="confirm-message"></p>
+            <div class="popup-buttons">
+                <button id="confirm-cancel" class="btn-secondary" onclick="App.cancelConfirm()">Cancel</button>
+                <button id="confirm-ok" class="btn-danger" onclick="App.okConfirm()">Yes, I'm sure</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+</html>

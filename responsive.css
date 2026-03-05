@@ -1,0 +1,248 @@
+/* ============================================
+   TaDa List — Responsive Styles
+   Version 1.0.0
+   ============================================ */
+
+/* ---- Tablet (768px and below) ---- */
+@media (max-width: 768px) {
+    .login-container {
+        padding: 32px 24px;
+    }
+
+    .app-title {
+        font-size: 2.5rem;
+    }
+
+    .board-name {
+        max-width: 160px;
+    }
+
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .floating-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 1.2rem;
+        bottom: 20px;
+        right: 20px;
+    }
+
+    .zoom-widget {
+        bottom: 20px;
+        left: 16px;
+    }
+
+    .undo-redo-widget {
+        bottom: 20px;
+    }
+
+    .sync-btn {
+        bottom: 24px;
+        left: 150px;
+    }
+}
+
+/* ---- Phone (480px and below) ---- */
+@media (max-width: 480px) {
+    :root {
+        --top-bar-height: 48px;
+    }
+
+    .login-container {
+        padding: 28px 20px;
+    }
+
+    .app-title {
+        font-size: 2.2rem;
+    }
+
+    .app-tagline {
+        font-size: 0.9rem;
+        margin-bottom: 28px;
+    }
+
+    /* Top bar: truncate board name at ~5 chars */
+    .board-name {
+        max-width: 90px;
+        padding: 5px 8px;
+        font-size: 0.9rem;
+    }
+
+    .board-counter {
+        font-size: 0.75rem;
+    }
+
+    .top-bar-left {
+        gap: 6px;
+    }
+
+    .top-bar-right {
+        gap: 2px;
+    }
+
+    .icon-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 1.05rem;
+    }
+
+    #add-board-btn {
+        font-size: 1.2rem;
+    }
+
+    /* Settings hides into overflow on very small screens */
+    #settings-btn {
+        display: none;
+    }
+    #overflow-btn {
+        display: flex !important;
+    }
+
+    .floating-btn {
+        width: 46px;
+        height: 46px;
+        font-size: 1.1rem;
+        bottom: 16px;
+        right: 16px;
+    }
+
+    .zoom-widget {
+        bottom: 16px;
+        left: 12px;
+    }
+
+    .zoom-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 1rem;
+    }
+
+    .zoom-level {
+        font-size: 0.75rem;
+        padding: 3px 6px;
+    }
+
+    .undo-redo-widget {
+        bottom: 16px;
+    }
+
+    .undo-redo-btn {
+        width: 34px;
+        height: 30px;
+        font-size: 1rem;
+    }
+
+    .sync-btn {
+        bottom: 20px;
+        left: 130px;
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+    }
+
+    .toast {
+        bottom: 70px;
+        width: 90%;
+        font-size: 0.85rem;
+        padding: 10px 14px;
+    }
+
+    .popup-box {
+        padding: 22px;
+    }
+}
+
+/* ---- Very small phones (360px and below) ---- */
+@media (max-width: 360px) {
+    .app-title {
+        font-size: 1.9rem;
+    }
+
+    .board-name {
+        max-width: 70px;
+    }
+
+    .board-counter {
+        display: none;
+    }
+}
+
+/* ---- Touch device adjustments ---- */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .icon-btn {
+        min-width: 42px;
+        min-height: 42px;
+    }
+
+    .zoom-btn {
+        min-width: 36px;
+        min-height: 36px;
+    }
+
+    .undo-redo-btn {
+        min-width: 42px;
+        min-height: 38px;
+    }
+
+    .btn-primary {
+        padding: 15px;
+    }
+
+    /* No hover states on touch */
+    .icon-btn:hover,
+    .board-name:hover,
+    .zoom-btn:hover,
+    .zoom-level:hover,
+    .undo-redo-btn:hover:not(:disabled),
+    .sync-btn:hover {
+        background: none;
+    }
+}
+
+/* ---- Landscape phone ---- */
+@media (max-height: 500px) and (orientation: landscape) {
+    .login-container {
+        padding: 16px 24px;
+    }
+
+    .app-title {
+        font-size: 2rem;
+        margin-bottom: 4px;
+    }
+
+    .app-tagline {
+        margin-bottom: 16px;
+    }
+
+    .form-group {
+        margin-bottom: 10px;
+    }
+
+    .form-group input {
+        padding: 10px 12px;
+    }
+
+    .btn-primary {
+        padding: 10px;
+    }
+
+    .floating-btn {
+        bottom: 12px;
+        right: 12px;
+        width: 42px;
+        height: 42px;
+    }
+
+    .zoom-widget {
+        bottom: 12px;
+        left: 12px;
+    }
+
+    .undo-redo-widget {
+        bottom: 12px;
+    }
+}

@@ -1,0 +1,715 @@
+/* ============================================
+   TaDa List — Core Styles
+   Version 1.0.0
+   ============================================ */
+
+/* ---- CSS Variables ---- */
+:root {
+    /* App Colors */
+    --bg-primary: #1B1B2F;
+    --bg-secondary: #162447;
+    --bg-surface: #1F2A48;
+    --bg-surface-hover: #263354;
+    --bg-login: #0F0F1E;
+
+    --text-primary: #E8E8F0;
+    --text-secondary: #A0A0BC;
+    --text-muted: #6C6C8A;
+
+    --accent: #FFD700;
+    --accent-hover: #FFC000;
+    --accent-glow: rgba(255, 215, 0, 0.25);
+
+    --danger: #FF4757;
+    --danger-hover: #E8414F;
+    --success: #2ED573;
+    --warning: #FFA502;
+
+    --border: #2A2A4A;
+    --border-light: #3A3A5A;
+
+    /* Sizing */
+    --top-bar-height: 52px;
+    --panel-width: 320px;
+
+    /* Fonts */
+    --font-display: 'Fredoka One', cursive;
+    --font-body: 'Nunito', sans-serif;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.4s ease;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 20px var(--accent-glow);
+}
+
+/* ---- Reset ---- */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent pull-to-refresh on mobile */
+body {
+    overscroll-behavior: none;
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+a:hover {
+    color: var(--accent-hover);
+}
+
+button {
+    font-family: var(--font-body);
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+    font-size: inherit;
+}
+
+input {
+    font-family: var(--font-body);
+    font-size: 16px; /* Prevents iOS zoom on focus */
+}
+
+
+/* ============================================
+   SCREENS — Only one visible at a time
+   ============================================ */
+.screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    z-index: 1;
+}
+.screen.active {
+    display: flex;
+}
+
+
+/* ============================================
+   LOGIN SCREEN
+   ============================================ */
+#login-screen {
+    background: var(--bg-login);
+    align-items: center;
+    justify-content: center;
+    /* Subtle background texture */
+    background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(255, 215, 0, 0.04) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(30, 60, 120, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(255, 215, 0, 0.03) 0%, transparent 50%);
+}
+
+.login-container {
+    width: 100%;
+    max-width: 380px;
+    padding: 40px 28px;
+    text-align: center;
+}
+
+.app-title {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    text-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+}
+
+.app-tagline {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 36px;
+    font-weight: 400;
+}
+
+/* Auth Forms */
+.auth-form {
+    text-align: left;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg-surface);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.form-group input::placeholder {
+    color: var(--text-muted);
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    color: var(--bg-primary);
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+    letter-spacing: 0.3px;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-glow);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-surface-hover);
+    border-color: var(--border-light);
+}
+
+.btn-danger {
+    padding: 10px 20px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.btn-danger:hover {
+    background: var(--danger-hover);
+}
+
+.auth-links {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 18px;
+    font-size: 0.85rem;
+}
+
+.signup-notice {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.error-msg {
+    color: var(--danger);
+    font-size: 0.85rem;
+    margin-top: 14px;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.success-msg {
+    color: var(--success);
+    font-size: 0.85rem;
+    margin-top: 14px;
+    text-align: center;
+    line-height: 1.4;
+}
+
+
+/* ============================================
+   LOCK SCREEN
+   ============================================ */
+#lock-screen {
+    background: var(--bg-login);
+    align-items: center;
+    justify-content: center;
+    background-image:
+        radial-gradient(ellipse at 50% 50%, rgba(255, 215, 0, 0.04) 0%, transparent 50%);
+}
+
+.lock-info {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.lock-email {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+}
+
+
+/* ============================================
+   LOADING SCREEN
+   ============================================ */
+#loading-screen {
+    background: var(--bg-login);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.loading-container {
+    text-align: center;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    margin: 30px auto 0;
+    border: 4px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+
+/* ============================================
+   MAIN APP SHELL
+   ============================================ */
+#app-screen {
+    flex-direction: column;
+    background: var(--bg-primary);
+}
+
+
+/* ---- Top Bar ---- */
+#top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--top-bar-height);
+    padding: 0 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+    flex-shrink: 0;
+}
+
+.top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0; /* Allow truncation */
+}
+
+.top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.board-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    transition: background var(--transition-fast);
+    max-width: 200px;
+    cursor: pointer;
+}
+
+.board-name:hover {
+    background: var(--bg-surface);
+}
+
+#board-name-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dropdown-arrow {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.board-counter {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.icon-btn {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 1.15rem;
+    transition: background var(--transition-fast);
+}
+
+.icon-btn:hover {
+    background: var(--bg-surface);
+}
+
+#add-board-btn {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+
+/* ---- Connection Bar ---- */
+.connection-bar {
+    padding: 8px 16px;
+    background: var(--warning);
+    color: var(--bg-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+
+/* ---- Canvas Area ---- */
+#canvas-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+#canvas-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+
+/* ---- Floating Add Note Button ---- */
+.floating-btn {
+    position: fixed;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg-primary);
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    z-index: 90;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.floating-btn:hover {
+    transform: scale(1.08);
+    box-shadow: var(--shadow-lg);
+}
+
+.floating-btn:active {
+    transform: scale(0.95);
+}
+
+.floating-btn-right {
+    bottom: 24px;
+    right: 24px;
+}
+
+
+/* ---- Zoom Controls ---- */
+.zoom-widget {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+    z-index: 90;
+    box-shadow: var(--shadow-sm);
+}
+
+.zoom-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    transition: background var(--transition-fast);
+}
+
+.zoom-btn:hover {
+    background: var(--bg-surface-hover);
+}
+
+.zoom-level {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    transition: background var(--transition-fast);
+}
+
+.zoom-level:hover {
+    background: var(--bg-surface-hover);
+}
+
+
+/* ---- Undo/Redo ---- */
+.undo-redo-widget {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+    z-index: 90;
+    box-shadow: var(--shadow-sm);
+}
+
+.undo-redo-btn {
+    width: 38px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    font-size: 1.1rem;
+    transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+
+.undo-redo-btn:hover:not(:disabled) {
+    background: var(--bg-surface-hover);
+}
+
+.undo-redo-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+
+/* ---- Sync Button ---- */
+.sync-btn {
+    position: fixed;
+    bottom: 28px;
+    left: 170px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    z-index: 90;
+    box-shadow: var(--shadow-sm);
+    transition: background var(--transition-fast), transform var(--transition-normal);
+}
+
+.sync-btn:hover {
+    background: var(--bg-surface-hover);
+}
+
+.sync-btn.syncing {
+    animation: syncSpin 1s linear infinite;
+}
+
+@keyframes syncSpin {
+    to { transform: rotate(360deg); }
+}
+
+
+/* ============================================
+   TOAST NOTIFICATION
+   ============================================ */
+.toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    z-index: 500;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    animation: toastSlideUp 0.3s ease;
+}
+
+@keyframes toastSlideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.toast-undo {
+    padding: 4px 12px;
+    background: var(--accent);
+    color: var(--bg-primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    transition: background var(--transition-fast);
+}
+
+.toast-undo:hover {
+    background: var(--accent-hover);
+}
+
+.toast-close {
+    color: var(--text-muted);
+    font-size: 1rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color var(--transition-fast);
+}
+
+.toast-close:hover {
+    color: var(--text-primary);
+}
+
+
+/* ============================================
+   CONFIRMATION POPUP
+   ============================================ */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.popup-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 360px;
+    width: 90%;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+
+.popup-box p {
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    color: var(--text-primary);
+}
+
+.popup-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.popup-buttons button {
+    flex: 1;
+}
