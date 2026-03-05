@@ -3,53 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaDa List Debug</title>
+    <title>TaDa List - Create Account</title>
     <style>
         body { font-family: Arial; padding: 20px; background: #111; color: #0f0; font-size: 18px; }
-        #log { white-space: pre-wrap; line-height: 1.8; }
-        button { padding: 15px 30px; font-size: 20px; margin: 10px 0; }
+        input { padding: 12px; font-size: 18px; width: 100%; margin: 8px 0; box-sizing: border-box; }
+        button { padding: 15px 30px; font-size: 20px; margin: 15px 0; background: #FFD700; color: #111; border: none; width: 100%; }
+        #log { white-space: pre-wrap; line-height: 1.8; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>TaDa List Debug Page</h1>
-    <div id="log">Loading tests...\n</div>
+    <h1>Create Your TaDa List Account</h1>
+    <p>Email: suziaz69@gmail.com</p>
+    <label>Choose your password:</label>
+    <input type="password" id="pw" placeholder="Min 6 characters">
+    <button id="go">Create Account</button>
+    <div id="log"></div>
     <script>
         var log = document.getElementById('log');
         function addLog(msg) { log.textContent += msg + '\n'; }
-
-        addLog('Step 1: JavaScript is running');
-
         var script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
         script.onload = function() {
-            addLog('Step 2: Supabase library loaded OK');
-            try {
-                var sb = window.supabase.createClient(
-                    'https://mutnhfdqbuefkvguljhm.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dG5oZmRxYnVlZmt2Z3VsamhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NDczMTMsImV4cCI6MjA4ODIyMzMxM30.IpRi1vAx752EpRttONAReO5UbzuInzHZHvhabuiK4Sw'
-                );
-                addLog('Step 3: Supabase client created OK');
-
-                sb.auth.signInWithPassword({
+            addLog('Supabase loaded OK');
+            var sb = window.supabase.createClient(
+                'https://mutnhfdqbuefkvguljhm.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dG5oZmRxYnVlZmt2Z3VsamhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NDczMTMsImV4cCI6MjA4ODIyMzMxM30.IpRi1vAx752EpRttONAReO5UbzuInzHZHvhabuiK4Sw'
+            );
+            document.getElementById('go').addEventListener('click', function() {
+                var pw = document.getElementById('pw').value;
+                if (pw.length < 6) { addLog('Password must be at least 6 characters'); return; }
+                addLog('Creating account...');
+                sb.auth.signUp({
                     email: 'suziaz69@gmail.com',
-                    password: 'TempPassword123!'
+                    password: pw
                 }).then(function(result) {
                     if (result.error) {
-                        addLog('Step 4 ERROR: ' + result.error.message);
-                    } else {
-                        addLog('Step 4: LOGIN SUCCESS!');
+                        addLog('ERROR: ' + result.error.message);
+                    } else if (result.data.user) {
+                        addLog('SUCCESS! Account created!');
                         addLog('User ID: ' + result.data.user.id);
-                        addLog('Email: ' + result.data.user.email);
+                        addLog('Now trying to log in...');
+                        sb.auth.signInWithPassword({
+                            email: 'suziaz69@gmail.com',
+                            password: pw
+                        }).then(function(loginResult) {
+                            if (loginResult.error) {
+                                addLog('Login ERROR: ' + loginResult.error.message);
+                            } else {
+                                addLog('LOGIN SUCCESS!');
+                                addLog('Copy this User ID: ' + loginResult.data.user.id);
+                                addLog('Then go back to Claude for the next step.');
+                            }
+                        });
                     }
                 }).catch(function(err) {
-                    addLog('Step 4 CATCH: ' + err.message);
+                    addLog('CATCH ERROR: ' + err.message);
                 });
-            } catch(e) {
-                addLog('Step 3 ERROR: ' + e.message);
-            }
-        };
-        script.onerror = function() {
-            addLog('Step 2 ERROR: Supabase library FAILED to load');
+            });
         };
         document.body.appendChild(script);
     </script>
