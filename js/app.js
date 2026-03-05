@@ -1,21 +1,10 @@
-/* ============================================
-   TaDa List — Main App (app.js)
-   Version 1.0.0
-   Handles: app initialization, input detection,
-   toast notifications, confirmation popups,
-   shared utilities
-   ============================================ */
-
-const App = {
+var App = {
     initialized: false,
-    inputType: 'mouse', // 'mouse' or 'touch'
+    inputType: 'mouse',
     toastTimer: null,
     confirmCallback: null,
 
-    // ==========================================
-    // INITIALIZATION
-    // ==========================================
-    init() {
+    init: function() {
         if (this.initialized) return;
         this.initialized = true;
 
@@ -23,20 +12,15 @@ const App = {
         this.setupKeyboardShortcuts();
         this.setupTabCloseWarning();
 
+        Board.init();
+
         console.log('TaDa List v1.0.0 initialized');
-        console.log('Input type:', this.inputType);
-        console.log('User:', Auth.currentUser?.email);
-        console.log('Role:', Auth.userProfile?.role);
+        console.log('Input type: ' + this.inputType);
     },
 
-    // ==========================================
-    // INPUT DETECTION
-    // ==========================================
-    detectInputType() {
-        // Check for touch capability
-        const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        const hasMouse = window.matchMedia('(hover: hover)').matches;
-        const hasKeyboard = !hasTouch || hasMouse; // If has mouse, likely has keyboard too
+    detectInputType: function() {
+        var hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        var hasMouse = window.matchMedia('(hover: hover)').matches;
 
         if (hasTouch && !hasMouse) {
             this.inputType = 'touch';
@@ -46,89 +30,65 @@ const App = {
             document.body.classList.add('mouse-device');
         }
 
-        if (hasKeyboard) {
+        if (!hasTouch || hasMouse) {
             document.body.classList.add('has-keyboard');
         }
 
-        // Listen for input type changes (e.g., connecting mouse to iPad)
-        window.addEventListener('pointerdown', (e) => {
+        window.addEventListener('pointerdown', function(e) {
             if (e.pointerType === 'touch') {
-                if (this.inputType !== 'touch') {
-                    this.inputType = 'touch';
-                    document.body.classList.add('touch-device');
-                    document.body.classList.remove('mouse-device');
-                }
+                App.inputType = 'touch';
+                document.body.classList.add('touch-device');
+                document.body.classList.remove('mouse-device');
             } else if (e.pointerType === 'mouse') {
-                if (this.inputType !== 'mouse') {
-                    this.inputType = 'mouse';
-                    document.body.classList.add('mouse-device');
-                    document.body.classList.remove('touch-device');
-                }
+                App.inputType = 'mouse';
+                document.body.classList.add('mouse-device');
+                document.body.classList.remove('touch-device');
             }
         });
     },
 
-    // ==========================================
-    // KEYBOARD SHORTCUTS
-    // ==========================================
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // Only when app screen is active
+    setupKeyboardShortcuts: function() {
+        document.addEventListener('keydown', function(e) {
             if (!document.getElementById('app-screen').classList.contains('active')) return;
 
-            // Ctrl+Z — Undo
             if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
                 e.preventDefault();
-                this.undo();
+                App.undo();
             }
 
-            // Ctrl+Y or Ctrl+Shift+Z — Redo
             if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
                 e.preventDefault();
-                this.redo();
+                App.redo();
             }
 
-            // Escape — Cancel current action
             if (e.key === 'Escape') {
-                this.cancelCurrentAction();
+                App.cancelCurrentAction();
             }
         });
     },
 
-    // ==========================================
-    // UNDO / REDO (placeholder for Phase 3)
-    // ==========================================
-    undo() {
-        // Will be implemented with Fabric.js in Phase 3
+    undo: function() {
         console.log('Undo triggered');
     },
 
-    redo() {
-        // Will be implemented with Fabric.js in Phase 3
+    redo: function() {
         console.log('Redo triggered');
     },
 
-    cancelCurrentAction() {
-        // Will cancel crosshair mode, close panels, etc.
-        console.log('Escape pressed — cancel current action');
+    cancelCurrentAction: function() {
+        console.log('Escape pressed');
     },
 
-    // ==========================================
-    // TOAST NOTIFICATIONS
-    // ==========================================
-    showToast(message, options = {}) {
-        const toast = document.getElementById('toast');
-        const msgEl = document.getElementById('toast-message');
-        const undoBtn = document.getElementById('toast-undo');
+    showToast: function(message, options) {
+        options = options || {};
+        var toast = document.getElementById('toast');
+        var msgEl = document.getElementById('toast-message');
+        var undoBtn = document.getElementById('toast-undo-btn');
 
-        // Clear any existing timer
-        if (this.toastTimer) {
-            clearTimeout(this.toastTimer);
-        }
+        if (this.toastTimer) clearTimeout(this.toastTimer);
 
         msgEl.textContent = message;
 
-        // Show undo button if callback provided
         if (options.onUndo) {
             undoBtn.style.display = 'inline-block';
             this.toastUndoCallback = options.onUndo;
@@ -139,16 +99,14 @@ const App = {
 
         toast.style.display = 'flex';
 
-        // Auto-hide after duration (default 5 seconds)
-        const duration = options.duration || 5000;
-        this.toastTimer = setTimeout(() => {
-            this.hideToast();
+        var duration = options.duration || 5000;
+        this.toastTimer = setTimeout(function() {
+            App.hideToast();
         }, duration);
     },
 
-    hideToast() {
-        const toast = document.getElementById('toast');
-        toast.style.display = 'none';
+    hideToast: function() {
+        document.getElementById('toast').style.display = 'none';
         this.toastUndoCallback = null;
         if (this.toastTimer) {
             clearTimeout(this.toastTimer);
@@ -156,97 +114,62 @@ const App = {
         }
     },
 
-    undoToast() {
-        if (this.toastUndoCallback) {
-            this.toastUndoCallback();
-        }
+    undoToast: function() {
+        if (this.toastUndoCallback) this.toastUndoCallback();
         this.hideToast();
     },
 
-    // ==========================================
-    // CONFIRMATION POPUP
-    // ==========================================
-    showConfirm(message, onConfirm) {
-        const popup = document.getElementById('confirm-popup');
-        const msgEl = document.getElementById('confirm-message');
-
-        msgEl.textContent = message;
+    showConfirm: function(message, onConfirm) {
+        document.getElementById('confirm-message').textContent = message;
         this.confirmCallback = onConfirm;
-        popup.style.display = 'flex';
+        document.getElementById('confirm-popup').style.display = 'flex';
     },
 
-    okConfirm() {
-        const popup = document.getElementById('confirm-popup');
-        popup.style.display = 'none';
-
+    okConfirm: function() {
+        document.getElementById('confirm-popup').style.display = 'none';
         if (this.confirmCallback) {
             this.confirmCallback();
             this.confirmCallback = null;
         }
     },
 
-    cancelConfirm() {
-        const popup = document.getElementById('confirm-popup');
-        popup.style.display = 'none';
+    cancelConfirm: function() {
+        document.getElementById('confirm-popup').style.display = 'none';
         this.confirmCallback = null;
     },
 
-    // ==========================================
-    // TAB CLOSE WARNING
-    // ==========================================
-    setupTabCloseWarning() {
-        window.addEventListener('beforeunload', (e) => {
-            // Will check for unsaved/unsynced changes
-            // For now, only warn if there are queued changes
-            if (this.hasUnsyncedChanges()) {
+    setupTabCloseWarning: function() {
+        window.addEventListener('beforeunload', function(e) {
+            if (App.hasUnsyncedChanges()) {
                 e.preventDefault();
-                e.returnValue = 'You have changes that haven\'t synced yet — are you sure you want to leave?';
+                e.returnValue = 'You have changes that have not synced yet.';
             }
         });
     },
 
-    hasUnsyncedChanges() {
-        // Will be implemented in Phase 9
+    hasUnsyncedChanges: function() {
         return false;
     },
 
-    // ==========================================
-    // UTILITIES
-    // ==========================================
-
-    // Format a date for display
-    formatDate(dateString) {
-        const date = new Date(dateString);
+    formatDate: function(dateString) {
+        var date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
         });
     },
 
-    // Generate auto-filename: BoardName_YYYY_MM_DD
-    generateFilename(boardName, extension) {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const safeName = boardName.replace(/[^a-zA-Z0-9]/g, '_');
-        return `${safeName}_${year}_${month}_${day}.${extension}`;
+    generateFilename: function(boardName, extension) {
+        var now = new Date();
+        var y = now.getFullYear();
+        var m = String(now.getMonth() + 1).padStart(2, '0');
+        var d = String(now.getDate()).padStart(2, '0');
+        var safeName = boardName.replace(/[^a-zA-Z0-9]/g, '_');
+        return safeName + '_' + y + '_' + m + '_' + d + '.' + extension;
     },
 
-    // Truncate text with ellipsis
-    truncate(text, maxLength) {
+    truncate: function(text, maxLength) {
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
     }
 };
-
-
-// ==========================================
-// APP STARTUP
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    Auth.init();
-});
