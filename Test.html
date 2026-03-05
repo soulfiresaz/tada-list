@@ -3,22 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaDa List - Create Account</title>
+    <title>TaDa List - Login Test</title>
     <style>
         body { font-family: Arial; padding: 20px; background: #111; color: #0f0; font-size: 18px; }
         input { padding: 12px; font-size: 18px; width: 100%; margin: 8px 0; box-sizing: border-box; }
         button { padding: 15px 30px; font-size: 20px; margin: 15px 0; background: #FFD700; color: #111; border: none; width: 100%; }
         #log { white-space: pre-wrap; line-height: 1.8; margin-top: 20px; }
+        .toggle { background: none; color: #0f0; border: 1px solid #0f0; width: auto; padding: 5px 15px; font-size: 14px; margin-left: 10px; }
     </style>
 </head>
 <body>
-    <h1>Create Your TaDa List Account</h1>
-    <p>Email: suziaz69@gmail.com</p>
-    <label>Choose your password:</label>
-    <input type="password" id="pw" placeholder="Min 6 characters">
-    <button id="go">Create Account</button>
+    <h1>TaDa List - Login Test</h1>
+    <label>Email:</label>
+    <input type="email" id="em" value="suziaz69@gmail.com">
+    <label>Password:</label>
+    <div style="display:flex; align-items:center;">
+        <input type="password" id="pw" placeholder="Your password" style="flex:1;">
+        <button class="toggle" id="toggle-pw">Show</button>
+    </div>
+    <button id="go">Log In</button>
     <div id="log"></div>
     <script>
+        document.getElementById('toggle-pw').addEventListener('click', function() {
+            var pw = document.getElementById('pw');
+            if (pw.type === 'password') { pw.type = 'text'; this.textContent = 'Hide'; }
+            else { pw.type = 'password'; this.textContent = 'Show'; }
+        });
         var log = document.getElementById('log');
         function addLog(msg) { log.textContent += msg + '\n'; }
         var script = document.createElement('script');
@@ -30,34 +40,35 @@
                 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dG5oZmRxYnVlZmt2Z3VsamhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NDczMTMsImV4cCI6MjA4ODIyMzMxM30.IpRi1vAx752EpRttONAReO5UbzuInzHZHvhabuiK4Sw'
             );
             document.getElementById('go').addEventListener('click', function() {
+                var email = document.getElementById('em').value;
                 var pw = document.getElementById('pw').value;
-                if (pw.length < 6) { addLog('Password must be at least 6 characters'); return; }
-                addLog('Creating account...');
-                sb.auth.signUp({
-                    email: 'suziaz69@gmail.com',
+                addLog('Trying to log in...');
+                sb.auth.signInWithPassword({
+                    email: email,
                     password: pw
                 }).then(function(result) {
                     if (result.error) {
                         addLog('ERROR: ' + result.error.message);
-                    } else if (result.data.user) {
-                        addLog('SUCCESS! Account created!');
-                        addLog('User ID: ' + result.data.user.id);
-                        addLog('Now trying to log in...');
-                        sb.auth.signInWithPassword({
-                            email: 'suziaz69@gmail.com',
-                            password: pw
-                        }).then(function(loginResult) {
-                            if (loginResult.error) {
-                                addLog('Login ERROR: ' + loginResult.error.message);
+                    } else {
+                        addLog('LOGIN SUCCESS!');
+                        addLog('User: ' + result.data.user.email);
+                        addLog('ID: ' + result.data.user.id);
+                        addLog('Now loading profile...');
+                        sb.from('profiles').select('*').eq('id', result.data.user.id).single().then(function(pResult) {
+                            if (pResult.error) {
+                                addLog('Profile ERROR: ' + pResult.error.message);
                             } else {
-                                addLog('LOGIN SUCCESS!');
-                                addLog('Copy this User ID: ' + loginResult.data.user.id);
-                                addLog('Then go back to Claude for the next step.');
+                                addLog('Profile loaded!');
+                                addLog('Role: ' + pResult.data.role);
+                                addLog('Storage limit: ' + pResult.data.storage_limit_mb + 'MB');
+                                addLog('');
+                                addLog('EVERYTHING WORKS! Your main app login issue is just the HTML buttons.');
+                                addLog('Go tell Claude this worked and we will fix the main app.');
                             }
                         });
                     }
                 }).catch(function(err) {
-                    addLog('CATCH ERROR: ' + err.message);
+                    addLog('CATCH: ' + err.message);
                 });
             });
         };
