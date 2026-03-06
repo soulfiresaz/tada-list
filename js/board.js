@@ -22,7 +22,8 @@ var Board = {
             height: height,
             backgroundColor: '#2a2a4a',
             selection: true,
-            preserveObjectStacking: true
+            preserveObjectStacking: true,
+            allowTouchScrolling: false
         });
 
         this.setupZoomControls();
@@ -31,7 +32,6 @@ var Board = {
         this.setupPinchZoom();
         this.setupResize();
         this.setupUndoRedo();
-        this.setupDeleteProtection();
         this.updateZoomDisplay();
         this.placeDefaultElements();
 
@@ -104,39 +104,12 @@ var Board = {
         this.canvas.renderAll();
     },
 
-    setupDeleteProtection: function() {
-        var self = this;
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                var active = self.canvas.getActiveObject();
-                if (active && active.customType === 'divider') {
-                    e.preventDefault();
-                    App.showToast('The divider line cannot be deleted.');
-                    return;
-                }
-                if (active && !active.isEditing) {
-                    e.preventDefault();
-                }
-            }
-        });
-    },
-
     setupUndoRedo: function() {
         var self = this;
 
         this.canvas.on('object:modified', function(opt) {
             if (!self.trackingChanges) return;
             self.saveState(opt.target, 'modified');
-        });
-
-        this.canvas.on('object:moving', function(opt) {
-            if (!opt.target._originalState) {
-                opt.target._originalState = {
-                    left: opt.target._stateProperties ? opt.target._stateProperties.left : opt.target.left,
-                    top: opt.target._stateProperties ? opt.target._stateProperties.top : opt.target.top
-                };
-            }
         });
 
         document.getElementById('undo-btn').addEventListener('click', function() {
@@ -258,25 +231,6 @@ var Board = {
         document.getElementById('redo-btn').disabled = this.redoStack.length === 0;
     },
 
-    flipSelected: function(direction) {
-        var active = this.canvas.getActiveObject();
-        if (!active) return;
-
-        active._originalState = {
-            flipX: active.flipX,
-            flipY: active.flipY
-        };
-
-        if (direction === 'horizontal') {
-            active.set('flipX', !active.flipX);
-        } else if (direction === 'vertical') {
-            active.set('flipY', !active.flipY);
-        }
-
-        this.canvas.renderAll();
-        this.saveState(active, 'flip');
-    },
-
     setupZoomControls: function() {
         var self = this;
 
@@ -364,12 +318,15 @@ var Board = {
     setupPinchZoom: function() {
         var self = this;
         var lastDist = 0;
+        var isPinching = false;
 
-        var canvasEl = this.canvas.upperCanvasEl;
+        var canvasEl = document.getElementById('canvas-container');
 
         canvasEl.addEventListener('touchstart', function(e) {
             if (e.touches.length === 2) {
                 e.preventDefault();
+                isPinching = true;
+                self.isPanning = false;
                 var dx = e.touches[0].clientX - e.touches[1].clientX;
                 var dy = e.touches[0].clientY - e.touches[1].clientY;
                 lastDist = Math.sqrt(dx * dx + dy * dy);
@@ -377,29 +334,39 @@ var Board = {
         }, { passive: false });
 
         canvasEl.addEventListener('touchmove', function(e) {
-            if (e.touches.length === 2) {
+            if (e.touches.length === 2 && isPinching) {
                 e.preventDefault();
                 var dx = e.touches[0].clientX - e.touches[1].clientX;
                 var dy = e.touches[0].clientY - e.touches[1].clientY;
                 var dist = Math.sqrt(dx * dx + dy * dy);
 
                 if (lastDist > 0) {
-                    var scale = dist / lastDist;
+                    var scaleFactor = dist / lastDist;
+                    var newZoom = self.zoomLevel * scaleFactor;
+
+                    if (newZoom < self.minZoom) newZoom = self.minZoom;
+                    if (newZoom > self.maxZoom) newZoom = self.maxZoom;
+
                     var midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                     var midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
 
-                    var rect = canvasEl.getBoundingClientRect();
-                    var point = new fabric.Point(midX - rect.left, midY - rect.top);
+                    var canvasRect = self.canvas.upperCanvasEl.getBoundingClientRect();
+                    var point = new fabric.Point(midX - canvasRect.left, midY - canvasRect.top);
 
-                    self.zoomToPoint(self.zoomLevel * scale, point);
+                    self.zoomLevel = newZoom;
+                    self.canvas.zoomToPoint(point, newZoom);
+                    self.updateZoomDisplay();
                 }
 
                 lastDist = dist;
             }
         }, { passive: false });
 
-        canvasEl.addEventListener('touchend', function() {
-            lastDist = 0;
+        canvasEl.addEventListener('touchend', function(e) {
+            if (e.touches.length < 2) {
+                isPinching = false;
+                lastDist = 0;
+            }
         });
     },
 
