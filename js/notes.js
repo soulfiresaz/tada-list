@@ -23,13 +23,6 @@ var Notes = {
         var lastTapTime = 0;
 
         Board.canvas.on('mouse:dblclick', function(opt) {
-            // Check if double-clicking on an existing note
-            if (opt.target && opt.target.customType === 'note') {
-                self.enterEditMode(opt.target);
-                return;
-            }
-            
-            // Otherwise, create a new note only on empty space
             if (opt.target) return;
             if (self.crosshairMode) return;
             var pointer = Board.canvas.getPointer(opt.e);
@@ -124,9 +117,13 @@ var Notes = {
             if (!target.noteData) return;
 
             if (!target.noteData.scaleLock) {
+                var newWidth = target.width * target.scaleX;
+                var shape = target.noteData.shape;
+                var textPad = shape === 'circle' ? 0.55 : (shape === 'star' ? 0.5 : 0.9);
+                var newTextWidth = (newWidth * textPad) - 10;
+                if (newTextWidth < 30) newTextWidth = 30;
+
                 var objects = target.getObjects();
-                var targetWidth = target.width * target.scaleX;
-                var newTextWidth = Math.max(40, targetWidth - 20);
                 for (var i = 0; i < objects.length; i++) {
                     if (objects[i].type === 'textbox') {
                         objects[i].set({
@@ -159,10 +156,10 @@ var Notes = {
             btn.textContent = actions[i].icon;
             btn.title = actions[i].title;
             btn.setAttribute('data-action', actions[i].action);
-            btn.style.cssText = 'background:none;border:none;font-size:1.2rem;cursor:pointer;padding:6px;border-radius:6px;transition:background 0.2s;';
-            btn.addEventListener('mouseover', function() { this.style.background = '#2A2A4A'; });
+            btn.style.cssText = 'width:40px;height:40px;border:none;background:none;font-size:1.2rem;cursor:pointer;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;';
+            btn.addEventListener('click', this.handleActionClick.bind(this));
+            btn.addEventListener('mouseover', function() { this.style.background = '#263354'; });
             btn.addEventListener('mouseout', function() { this.style.background = 'none'; });
-            btn.addEventListener('click', this.handleActionBarClick.bind(this));
             bar.appendChild(btn);
         }
 
@@ -170,7 +167,7 @@ var Notes = {
         this.actionBar = bar;
     },
 
-    handleActionBarClick: function(e) {
+    handleActionClick: function(e) {
         var action = e.currentTarget.getAttribute('data-action');
         var active = Board.canvas.getActiveObject();
         if (!active || active.customType !== 'note') return;
@@ -280,10 +277,13 @@ var Notes = {
         container.style.cursor = 'crosshair';
 
         var btn = document.getElementById('add-note-btn');
-        btn.style.background = '#FFD700';
-        btn.title = 'Click to place note (ESC to cancel)';
+        btn.style.background = '#FF4757';
+        btn.title = 'Cancel (or press Escape)';
+
+        App.showToast('Click anywhere on the board to place a note. Press Escape to cancel.', { duration: 3000 });
 
         this._crosshairHandler = function(opt) {
+            if (opt.target) return;
             var pointer = Board.canvas.getPointer(opt.e);
             self.createNoteAt(pointer.x, pointer.y);
             self.exitCrosshairMode();
@@ -322,51 +322,95 @@ var Notes = {
             height: this.defaultHeight,
             color: this.defaultColor,
             text: '',
-            shape: 'square',
-            fontSize: 14,
+            shape: 'rectangle',
+            fontSize: 16,
             fontFamily: 'Nunito',
             fontColor: '#000000',
-            textAlign: 'left'
+            textAlign: 'left',
+            bold: false,
+            italic: false,
+            underline: false,
+            strikethrough: false,
+            opacity: 1,
+            scaleLock: true
         });
 
         Board.canvas.add(noteGroup);
         Board.canvas.setActiveObject(noteGroup);
         Board.canvas.renderAll();
 
-        this.enterEditMode(noteGroup);
+        return noteGroup;
     },
 
     buildNote: function(options) {
-        var bgOpacity = options.opacity !== undefined ? options.opacity : 1;
-
         var bg;
-        if (options.shape === 'star') {
-            bg = this.createStar(80, options.color);
-        } else if (options.shape === 'circle') {
-            bg = new fabric.Circle({
-                radius: 90, fill: options.color, stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
-                originX: 'center', originY: 'center'
-            });
-        } else if (options.shape === 'triangle') {
-            bg = new fabric.Triangle({
-                width: 180, height: 180, fill: options.color, stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
-                originX: 'center', originY: 'center'
-            });
-        } else {
-            bg = new fabric.Rect({
-                width: 180, height: 160, fill: options.color, stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
-                originX: 'center', originY: 'center'
-            });
+        var w = options.width;
+        var h = options.height;
+        var bgOpacity = options.opacity !== undefined ? options.opacity : 1;
+        var shapeSize = Math.max(w, h) * 0.65;
+
+        switch (options.shape) {
+            case 'rounded_rectangle':
+                bg = new fabric.Rect({
+                    width: w, height: h,
+                    fill: options.color, rx: 16, ry: 16,
+                    stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
+                    originX: 'center', originY: 'center',
+                    opacity: bgOpacity
+                });
+                break;
+            case 'circle':
+                bg = new fabric.Circle({
+                    radius: shapeSize,
+                    fill: options.color,
+                    stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
+                    originX: 'center', originY: 'center',
+                    opacity: bgOpacity
+                });
+                break;
+            case 'star':
+                bg = this.createStar(shapeSize, options.color);
+                bg.set('opacity', bgOpacity);
+                break;
+            case 'banner':
+                bg = new fabric.Rect({
+                    width: w * 1.2, height: h * 0.5,
+                    fill: options.color,
+                    stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
+                    originX: 'center', originY: 'center',
+                    opacity: bgOpacity
+                });
+                break;
+            default:
+                bg = new fabric.Rect({
+                    width: w, height: h,
+                    fill: options.color,
+                    stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
+                    originX: 'center', originY: 'center',
+                    opacity: bgOpacity
+                });
+                break;
         }
-        bg.set({ opacity: bgOpacity });
+
+        var textWidth;
+        if (options.shape === 'circle') {
+            textWidth = shapeSize * 1.1;
+        } else if (options.shape === 'star') {
+            textWidth = shapeSize * 0.85;
+        } else {
+            textWidth = w - 20;
+        }
 
         var textObj = new fabric.Textbox(options.text, {
-            width: 150, fontSize: options.fontSize, fontFamily: options.fontFamily,
-            fill: options.fontColor, textAlign: options.textAlign || 'left',
+            width: textWidth,
+            fontSize: options.fontSize,
+            fontFamily: options.fontFamily,
+            fill: options.fontColor,
             fontWeight: options.bold ? 'bold' : 'normal',
             fontStyle: options.italic ? 'italic' : 'normal',
             underline: options.underline,
             linethrough: options.strikethrough,
+            textAlign: options.textAlign || 'left',
             originX: 'center', originY: 'center',
             editable: false
         });
@@ -446,10 +490,15 @@ var Notes = {
             toolbar.id = 'edit-toolbar';
 
             var isPhone = window.innerWidth <= 480;
-            var toolbarHeight = isPhone ? 'auto' : '60px';
+            toolbar.style.cssText = 'display:none;position:fixed;left:0;right:0;z-index:200;background:#162447;border:1px solid #2A2A4A;padding:8px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.4);';
+            if (isPhone) {
+                toolbar.style.bottom = '0';
+                toolbar.style.borderRadius = '16px 16px 0 0';
+            } else {
+                toolbar.style.top = '52px';
+            }
 
-            toolbar.style.cssText = 'display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:160;background:#1F2A48;border:1px solid #3A3A5A;border-radius:12px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,0.6);max-width:95vw;height:' + toolbarHeight + ';overflow-y:auto;';
-
+            var btnStyle = 'width:32px;height:32px;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;display:inline-flex;align-items:center;justify-content:center;';
             var selStyle = 'padding:4px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-size:0.8rem;font-family:Nunito,sans-serif;';
             var lblStyle = 'color:#A0A0BC;font-size:0.7rem;';
 
@@ -469,31 +518,30 @@ var Notes = {
                 + '<option value="Times New Roman">Times New Roman</option>'
                 + '</select>'
                 + '<select id="edit-size" style="' + selStyle + 'width:50px;">'
-                + '<option value="10">10</option>'
-                + '<option value="12">12</option>'
-                + '<option value="14" selected>14</option>'
-                + '<option value="16">16</option>'
-                + '<option value="18">18</option>'
-                + '<option value="20">20</option>'
-                + '<option value="24">24</option>'
-                + '<option value="28">28</option>'
+                + '<option value="12">12</option><option value="14">14</option>'
+                + '<option value="16" selected>16</option><option value="18">18</option>'
+                + '<option value="20">20</option><option value="24">24</option>'
+                + '<option value="28">28</option><option value="32">32</option>'
+                + '<option value="36">36</option><option value="42">42</option>'
                 + '</select>'
+                + '<button id="edit-bold" class="fmt-btn" data-fmt="bold" style="' + btnStyle + 'font-weight:bold;">B</button>'
+                + '<button id="edit-italic" class="fmt-btn" data-fmt="italic" style="' + btnStyle + 'font-style:italic;">I</button>'
+                + '<button id="edit-underline" class="fmt-btn" data-fmt="underline" style="' + btnStyle + 'text-decoration:underline;">U</button>'
+                + '<button id="edit-strike" class="fmt-btn" data-fmt="strikethrough" style="' + btnStyle + 'text-decoration:line-through;">S</button>'
                 + '<select id="edit-align" style="' + selStyle + '">'
                 + '<option value="left">Left</option>'
                 + '<option value="center">Center</option>'
                 + '<option value="right">Right</option>'
+                + '<option value="justify">Justify</option>'
                 + '</select>'
                 + '<select id="edit-shape" style="' + selStyle + '">'
-                + '<option value="square">Square</option>'
+                + '<option value="rectangle">Rectangle</option>'
+                + '<option value="rounded_rectangle">Rounded</option>'
                 + '<option value="circle">Circle</option>'
-                + '<option value="triangle">Triangle</option>'
                 + '<option value="star">Star</option>'
+                + '<option value="banner">Banner</option>'
                 + '</select>'
-                + '<button id="edit-bold" class="fmt-btn" data-fmt="bold" style="padding:6px 10px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-weight:bold;cursor:pointer;font-family:Nunito,sans-serif;">B</button>'
-                + '<button id="edit-italic" class="fmt-btn" data-fmt="italic" style="padding:6px 10px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-style:italic;cursor:pointer;font-family:Nunito,sans-serif;">I</button>'
-                + '<button id="edit-underline" class="fmt-btn" data-fmt="underline" style="padding:6px 10px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;text-decoration:underline;cursor:pointer;font-family:Nunito,sans-serif;">U</button>'
-                + '<button id="edit-strike" class="fmt-btn" data-fmt="strikethrough" style="padding:6px 10px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;text-decoration:line-through;cursor:pointer;font-family:Nunito,sans-serif;">S</button>'
-                + '<label style="' + lblStyle + '">Opacity:</label>'
+                + '<label style="' + lblStyle + '">BG:</label>'
                 + '<input type="range" id="edit-opacity" min="0" max="100" value="100" style="width:50px;cursor:pointer;">'
                 + '<span id="edit-opacity-val" style="color:#A0A0BC;font-size:0.7rem;width:28px;">100%</span>'
                 + '</div>'
@@ -738,7 +786,6 @@ var Notes = {
         Board.canvas.add(newNote);
         Board.canvas.setActiveObject(newNote);
         Board.canvas.renderAll();
-
         App.showToast('Note duplicated', { duration: 1500 });
     },
 
@@ -746,13 +793,18 @@ var Notes = {
         if (!noteGroup || noteGroup.customType !== 'note') return;
 
         noteGroup.noteData.archived = true;
+        noteGroup.noteData.archivedAt = new Date().toISOString();
+
         this.hideActionBar();
         Board.canvas.remove(noteGroup);
+        Board.canvas.discardActiveObject();
         Board.canvas.renderAll();
 
         App.showToast('Note archived', {
             duration: 5000,
             onUndo: function() {
+                noteGroup.noteData.archived = false;
+                noteGroup.noteData.archivedAt = null;
                 Board.canvas.add(noteGroup);
                 Board.canvas.renderAll();
             }
