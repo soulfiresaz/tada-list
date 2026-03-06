@@ -249,11 +249,13 @@ var Notes = {
             fontSize: 16,
             fontFamily: 'Nunito',
             fontColor: '#000000',
+            textAlign: 'left',
             bold: false,
             italic: false,
             underline: false,
             strikethrough: false,
-            opacity: 1
+            opacity: 1,
+            scaleLock: true
         });
 
         Board.canvas.add(noteGroup);
@@ -265,30 +267,34 @@ var Notes = {
 
     buildNote: function(options) {
         var bg;
+        var w = options.width;
+        var h = options.height;
 
         switch (options.shape) {
             case 'rounded_rectangle':
                 bg = new fabric.Rect({
-                    width: options.width, height: options.height,
+                    width: w, height: h,
                     fill: options.color, rx: 16, ry: 16,
                     stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
                     originX: 'center', originY: 'center'
                 });
                 break;
             case 'circle':
+                var circleRadius = Math.max(w, h) * 0.75;
                 bg = new fabric.Circle({
-                    radius: Math.min(options.width, options.height) / 2,
+                    radius: circleRadius,
                     fill: options.color,
                     stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
                     originX: 'center', originY: 'center'
                 });
                 break;
             case 'star':
-                bg = this.createStar(options.width / 2, options.color);
+                var starRadius = Math.max(w, h) * 0.8;
+                bg = this.createStar(starRadius, options.color);
                 break;
             case 'banner':
                 bg = new fabric.Rect({
-                    width: options.width, height: options.height * 0.6,
+                    width: w * 1.2, height: h * 0.5,
                     fill: options.color,
                     stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
                     originX: 'center', originY: 'center'
@@ -296,7 +302,7 @@ var Notes = {
                 break;
             default:
                 bg = new fabric.Rect({
-                    width: options.width, height: options.height,
+                    width: w, height: h,
                     fill: options.color,
                     stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
                     originX: 'center', originY: 'center'
@@ -304,8 +310,10 @@ var Notes = {
                 break;
         }
 
+        var textWidth = options.shape === 'circle' ? w * 0.7 : (options.shape === 'star' ? w * 0.6 : w - 20);
+
         var textObj = new fabric.Textbox(options.text, {
-            width: options.width - 20,
+            width: textWidth,
             fontSize: options.fontSize,
             fontFamily: options.fontFamily,
             fill: options.fontColor,
@@ -313,7 +321,7 @@ var Notes = {
             fontStyle: options.italic ? 'italic' : 'normal',
             underline: options.underline,
             linethrough: options.strikethrough,
-            textAlign: 'left',
+            textAlign: options.textAlign || 'left',
             originX: 'center', originY: 'center',
             editable: false
         });
@@ -321,6 +329,7 @@ var Notes = {
         var group = new fabric.Group([bg, textObj], {
             left: options.x,
             top: options.y,
+            opacity: options.opacity !== undefined ? options.opacity : 1,
             shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.25)', blur: 8, offsetX: 3, offsetY: 3 }),
             customType: 'note',
             customId: options.id,
@@ -331,17 +340,19 @@ var Notes = {
                 fontSize: options.fontSize,
                 fontFamily: options.fontFamily,
                 fontColor: options.fontColor,
+                textAlign: options.textAlign || 'left',
                 bold: options.bold,
                 italic: options.italic,
                 underline: options.underline,
                 strikethrough: options.strikethrough,
-                scaleLock: true,
+                scaleLock: options.scaleLock !== undefined ? options.scaleLock : true,
+                opacity: options.opacity !== undefined ? options.opacity : 1,
                 archived: false,
                 createdAt: new Date().toISOString()
             },
             hasControls: true,
             hasBorders: true,
-            lockUniScaling: true
+            lockUniScaling: options.scaleLock !== undefined ? options.scaleLock : true
         });
 
         return group;
@@ -399,14 +410,18 @@ var Notes = {
                 toolbar.style.top = '52px';
             }
 
+            var btnStyle = 'width:32px;height:32px;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;display:inline-flex;align-items:center;justify-content:center;';
+            var selStyle = 'padding:4px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-size:0.8rem;font-family:Nunito,sans-serif;';
+            var lblStyle = 'color:#A0A0BC;font-size:0.7rem;';
+
             toolbar.innerHTML = '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:space-between;width:100%;">'
                 + '<button id="edit-discard" style="padding:6px 12px;background:#FF4757;color:white;border:none;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif;">Discard</button>'
                 + '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">'
-                + '<label style="color:#A0A0BC;font-size:0.75rem;">Color:</label>'
-                + '<input type="color" id="edit-note-color" value="#FFEB3B" style="width:30px;height:30px;border:none;border-radius:6px;cursor:pointer;background:none;">'
-                + '<label style="color:#A0A0BC;font-size:0.75rem;">Text:</label>'
-                + '<input type="color" id="edit-text-color" value="#000000" style="width:30px;height:30px;border:none;border-radius:6px;cursor:pointer;background:none;">'
-                + '<select id="edit-font" style="padding:4px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-size:0.8rem;font-family:Nunito,sans-serif;">'
+                + '<label style="' + lblStyle + '">Note:</label>'
+                + '<input type="color" id="edit-note-color" value="#FFEB3B" style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;">'
+                + '<label style="' + lblStyle + '">Text:</label>'
+                + '<input type="color" id="edit-text-color" value="#000000" style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;">'
+                + '<select id="edit-font" style="' + selStyle + '">'
                 + '<option value="Nunito">Nunito</option>'
                 + '<option value="Fredoka One">Fredoka One</option>'
                 + '<option value="Arial">Arial</option>'
@@ -414,29 +429,34 @@ var Notes = {
                 + '<option value="Courier New">Courier New</option>'
                 + '<option value="Times New Roman">Times New Roman</option>'
                 + '</select>'
-                + '<select id="edit-size" style="padding:4px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-size:0.8rem;width:55px;font-family:Nunito,sans-serif;">'
-                + '<option value="12">12</option>'
-                + '<option value="14">14</option>'
-                + '<option value="16" selected>16</option>'
-                + '<option value="18">18</option>'
-                + '<option value="20">20</option>'
-                + '<option value="24">24</option>'
-                + '<option value="28">28</option>'
-                + '<option value="32">32</option>'
-                + '<option value="36">36</option>'
-                + '<option value="42">42</option>'
+                + '<select id="edit-size" style="' + selStyle + 'width:50px;">'
+                + '<option value="12">12</option><option value="14">14</option>'
+                + '<option value="16" selected>16</option><option value="18">18</option>'
+                + '<option value="20">20</option><option value="24">24</option>'
+                + '<option value="28">28</option><option value="32">32</option>'
+                + '<option value="36">36</option><option value="42">42</option>'
                 + '</select>'
-                + '<button id="edit-bold" class="fmt-btn" data-fmt="bold" style="width:32px;height:32px;font-weight:bold;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;">B</button>'
-                + '<button id="edit-italic" class="fmt-btn" data-fmt="italic" style="width:32px;height:32px;font-style:italic;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;">I</button>'
-                + '<button id="edit-underline" class="fmt-btn" data-fmt="underline" style="width:32px;height:32px;text-decoration:underline;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;">U</button>'
-                + '<button id="edit-strike" class="fmt-btn" data-fmt="strikethrough" style="width:32px;height:32px;text-decoration:line-through;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;">S</button>'
-                + '<select id="edit-shape" style="padding:4px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-size:0.8rem;font-family:Nunito,sans-serif;">'
+                + '<button id="edit-bold" class="fmt-btn" data-fmt="bold" style="' + btnStyle + 'font-weight:bold;">B</button>'
+                + '<button id="edit-italic" class="fmt-btn" data-fmt="italic" style="' + btnStyle + 'font-style:italic;">I</button>'
+                + '<button id="edit-underline" class="fmt-btn" data-fmt="underline" style="' + btnStyle + 'text-decoration:underline;">U</button>'
+                + '<button id="edit-strike" class="fmt-btn" data-fmt="strikethrough" style="' + btnStyle + 'text-decoration:line-through;">S</button>'
+                + '<select id="edit-align" style="' + selStyle + '">'
+                + '<option value="left">Left</option>'
+                + '<option value="center">Center</option>'
+                + '<option value="right">Right</option>'
+                + '<option value="justify">Justify</option>'
+                + '</select>'
+                + '<select id="edit-shape" style="' + selStyle + '">'
                 + '<option value="rectangle">Rectangle</option>'
                 + '<option value="rounded_rectangle">Rounded</option>'
                 + '<option value="circle">Circle</option>'
                 + '<option value="star">Star</option>'
                 + '<option value="banner">Banner</option>'
                 + '</select>'
+                + '<label style="' + lblStyle + '">Opacity:</label>'
+                + '<input type="range" id="edit-opacity" min="0" max="100" value="100" style="width:60px;cursor:pointer;">'
+                + '<span id="edit-opacity-val" style="color:#A0A0BC;font-size:0.7rem;width:28px;">100%</span>'
+                + '<button id="edit-scale-lock" style="' + btnStyle + '" title="Scale lock">🔒</button>'
                 + '</div>'
                 + '<div style="display:flex;align-items:center;gap:4px;">'
                 + '<textarea id="edit-text-input" placeholder="Type your note..." style="width:200px;height:34px;padding:6px 10px;background:#1F2A48;border:1px solid #3A3A5A;border-radius:8px;color:#E8E8F0;font-size:0.85rem;font-family:Nunito,sans-serif;resize:none;outline:none;"></textarea>'
@@ -448,18 +468,37 @@ var Notes = {
 
             document.getElementById('edit-discard').addEventListener('click', function() { Notes.discardEdit(); });
             document.getElementById('edit-save').addEventListener('click', function() { Notes.saveEdit(); });
-
             document.getElementById('edit-note-color').addEventListener('input', function() { Notes.updateNoteProperty('color', this.value); });
             document.getElementById('edit-text-color').addEventListener('input', function() { Notes.updateNoteProperty('fontColor', this.value); });
             document.getElementById('edit-font').addEventListener('change', function() { Notes.updateNoteProperty('fontFamily', this.value); });
             document.getElementById('edit-size').addEventListener('change', function() { Notes.updateNoteProperty('fontSize', parseInt(this.value)); });
+            document.getElementById('edit-align').addEventListener('change', function() { Notes.updateNoteProperty('textAlign', this.value); });
             document.getElementById('edit-shape').addEventListener('change', function() { Notes.changeShape(this.value); });
+
+            document.getElementById('edit-opacity').addEventListener('input', function() {
+                var val = parseInt(this.value);
+                document.getElementById('edit-opacity-val').textContent = val + '%';
+                if (Notes.editingNote) {
+                    Notes.editingNote.noteData.opacity = val / 100;
+                    Notes.editingNote.set('opacity', val / 100);
+                    Board.canvas.renderAll();
+                }
+            });
+
+            document.getElementById('edit-scale-lock').addEventListener('click', function() {
+                if (!Notes.editingNote) return;
+                var data = Notes.editingNote.noteData;
+                data.scaleLock = !data.scaleLock;
+                Notes.editingNote.set('lockUniScaling', data.scaleLock);
+                this.textContent = data.scaleLock ? '🔒' : '🔓';
+                this.title = data.scaleLock ? 'Scale lock: ON (font scales with note)' : 'Scale lock: OFF (font stays same size)';
+                App.showToast(data.scaleLock ? 'Scale lock ON' : 'Scale lock OFF', { duration: 1000 });
+            });
 
             var fmtBtns = document.querySelectorAll('.fmt-btn');
             for (var i = 0; i < fmtBtns.length; i++) {
                 fmtBtns[i].addEventListener('click', function() {
-                    var fmt = this.getAttribute('data-fmt');
-                    Notes.toggleFormat(fmt);
+                    Notes.toggleFormat(this.getAttribute('data-fmt'));
                 });
             }
 
@@ -474,9 +513,12 @@ var Notes = {
             document.getElementById('edit-text-color').value = data.fontColor;
             document.getElementById('edit-font').value = data.fontFamily;
             document.getElementById('edit-size').value = String(data.fontSize);
+            document.getElementById('edit-align').value = data.textAlign || 'left';
             document.getElementById('edit-shape').value = data.shape;
             document.getElementById('edit-text-input').value = data.text;
-
+            document.getElementById('edit-opacity').value = Math.round((data.opacity || 1) * 100);
+            document.getElementById('edit-opacity-val').textContent = Math.round((data.opacity || 1) * 100) + '%';
+            document.getElementById('edit-scale-lock').textContent = data.scaleLock ? '🔒' : '🔓';
             this.updateFormatButtons();
         }
 
@@ -487,33 +529,28 @@ var Notes = {
     updateFormatButtons: function() {
         if (!this.editingNote) return;
         var data = this.editingNote.noteData;
-
-        var boldBtn = document.getElementById('edit-bold');
-        var italicBtn = document.getElementById('edit-italic');
-        var underBtn = document.getElementById('edit-underline');
-        var strikeBtn = document.getElementById('edit-strike');
-
-        boldBtn.style.background = data.bold ? '#FFD700' : '#1F2A48';
-        boldBtn.style.color = data.bold ? '#1B1B2F' : '#E8E8F0';
-        italicBtn.style.background = data.italic ? '#FFD700' : '#1F2A48';
-        italicBtn.style.color = data.italic ? '#1B1B2F' : '#E8E8F0';
-        underBtn.style.background = data.underline ? '#FFD700' : '#1F2A48';
-        underBtn.style.color = data.underline ? '#1B1B2F' : '#E8E8F0';
-        strikeBtn.style.background = data.strikethrough ? '#FFD700' : '#1F2A48';
-        strikeBtn.style.color = data.strikethrough ? '#1B1B2F' : '#E8E8F0';
+        var pairs = [
+            ['edit-bold', data.bold],
+            ['edit-italic', data.italic],
+            ['edit-underline', data.underline],
+            ['edit-strike', data.strikethrough]
+        ];
+        for (var i = 0; i < pairs.length; i++) {
+            var el = document.getElementById(pairs[i][0]);
+            el.style.background = pairs[i][1] ? '#FFD700' : '#1F2A48';
+            el.style.color = pairs[i][1] ? '#1B1B2F' : '#E8E8F0';
+        }
     },
 
     toggleFormat: function(fmt) {
         if (!this.editingNote) return;
         var data = this.editingNote.noteData;
-
         switch (fmt) {
             case 'bold': data.bold = !data.bold; break;
             case 'italic': data.italic = !data.italic; break;
             case 'underline': data.underline = !data.underline; break;
             case 'strikethrough': data.strikethrough = !data.strikethrough; break;
         }
-
         this.updateFormatButtons();
         this.applyNoteData();
     },
@@ -539,16 +576,19 @@ var Notes = {
 
         var newNote = this.buildNote({
             id: note.customId,
-            x: left, y: top,
-            width: w, height: h,
+            x: left, y: top, width: w, height: h,
             color: data.color, text: data.text, shape: newShape,
             fontSize: data.fontSize, fontFamily: data.fontFamily, fontColor: data.fontColor,
+            textAlign: data.textAlign,
             bold: data.bold, italic: data.italic,
             underline: data.underline, strikethrough: data.strikethrough,
-            opacity: note.opacity
+            opacity: data.opacity, scaleLock: data.scaleLock
         });
 
         newNote._savedData = note._savedData;
+        newNote.set({
+            shadow: new fabric.Shadow({ color: 'rgba(255,215,0,0.6)', blur: 20, offsetX: 0, offsetY: 0 })
+        });
         Board.canvas.add(newNote);
         Board.canvas.setActiveObject(newNote);
         Board.canvas.renderAll();
@@ -572,7 +612,8 @@ var Notes = {
                     fontWeight: data.bold ? 'bold' : 'normal',
                     fontStyle: data.italic ? 'italic' : 'normal',
                     underline: data.underline,
-                    linethrough: data.strikethrough
+                    linethrough: data.strikethrough,
+                    textAlign: data.textAlign || 'left'
                 });
             } else {
                 obj.set({ fill: data.color });
@@ -599,6 +640,10 @@ var Notes = {
         if (this.editingNote._savedData) {
             this.editingNote.noteData = JSON.parse(JSON.stringify(this.editingNote._savedData));
             this.applyNoteData();
+
+            this.editingNote.set('opacity', this.editingNote.noteData.opacity || 1);
+            this.editingNote.set('lockUniScaling', this.editingNote.noteData.scaleLock);
+
             delete this.editingNote._savedData;
         }
 
@@ -652,9 +697,10 @@ var Notes = {
             height: noteGroup.height * noteGroup.scaleY,
             color: data.color, text: data.text, shape: data.shape,
             fontSize: data.fontSize, fontFamily: data.fontFamily, fontColor: data.fontColor,
+            textAlign: data.textAlign,
             bold: data.bold, italic: data.italic,
             underline: data.underline, strikethrough: data.strikethrough,
-            opacity: noteGroup.opacity
+            opacity: data.opacity, scaleLock: data.scaleLock
         });
 
         Board.canvas.add(newNote);
