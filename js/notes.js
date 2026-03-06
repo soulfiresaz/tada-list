@@ -14,6 +14,7 @@ var Notes = {
         this.setupSelectionHandlers();
         this.createActionBar();
         this.setupDeleteKey();
+        this.setupScaleLockBehavior();
         console.log('Notes module initialized');
     },
 
@@ -87,6 +88,44 @@ var Notes = {
         });
     },
 
+    setupScaleLockBehavior: function() {
+        Board.canvas.on('object:scaling', function(opt) {
+            var target = opt.target;
+            if (!target || target.customType !== 'note') return;
+            if (!target.noteData || target.noteData.scaleLock) return;
+
+            var objects = target.getObjects();
+            for (var i = 0; i < objects.length; i++) {
+                if (objects[i].type === 'textbox') {
+                    objects[i].set({
+                        scaleX: 1 / target.scaleX,
+                        scaleY: 1 / target.scaleY
+                    });
+                }
+            }
+        });
+
+        Board.canvas.on('object:modified', function(opt) {
+            var target = opt.target;
+            if (!target || target.customType !== 'note') return;
+            if (!target.noteData || target.noteData.scaleLock) return;
+
+            var newWidth = target.width * target.scaleX;
+            var objects = target.getObjects();
+            for (var i = 0; i < objects.length; i++) {
+                if (objects[i].type === 'textbox') {
+                    var textPadding = target.noteData.shape === 'circle' ? 0.7 : (target.noteData.shape === 'star' ? 0.6 : 0.9);
+                    objects[i].set({
+                        width: (newWidth * textPadding) - 20,
+                        scaleX: 1 / target.scaleX,
+                        scaleY: 1 / target.scaleY
+                    });
+                }
+            }
+            Board.canvas.renderAll();
+        });
+    },
+
     createActionBar: function() {
         var bar = document.createElement('div');
         bar.id = 'note-action-bar';
@@ -94,9 +133,10 @@ var Notes = {
 
         var actions = [
             { icon: '🗑️', title: 'Delete', action: 'delete' },
+            { icon: '🔒', title: 'Scale lock: ON', action: 'scalelock' },
+            { icon: '✏️', title: 'Edit', action: 'edit' },
             { icon: '📋', title: 'Duplicate', action: 'duplicate' },
-            { icon: '📦', title: 'Archive', action: 'archive' },
-            { icon: '✏️', title: 'Edit', action: 'edit' }
+            { icon: '📦', title: 'Archive', action: 'archive' }
         ];
 
         for (var i = 0; i < actions.length; i++) {
@@ -125,6 +165,28 @@ var Notes = {
             case 'duplicate': this.duplicateNote(active); break;
             case 'archive': this.archiveNote(active); break;
             case 'edit': this.enterEditMode(active); break;
+            case 'scalelock': this.toggleScaleLock(active); break;
+        }
+    },
+
+    toggleScaleLock: function(noteGroup) {
+        if (!noteGroup || !noteGroup.noteData) return;
+        var data = noteGroup.noteData;
+        data.scaleLock = !data.scaleLock;
+        noteGroup.set('lockUniScaling', data.scaleLock);
+
+        this.updateScaleLockIcon(data.scaleLock);
+        App.showToast(data.scaleLock ? 'Scale lock ON - text scales with note' : 'Scale lock OFF - text stays same size', { duration: 1500 });
+    },
+
+    updateScaleLockIcon: function(locked) {
+        var buttons = this.actionBar.querySelectorAll('button');
+        for (var i = 0; i < buttons.length; i++) {
+            if (buttons[i].getAttribute('data-action') === 'scalelock') {
+                buttons[i].textContent = locked ? '🔒' : '🔓';
+                buttons[i].title = locked ? 'Scale lock: ON' : 'Scale lock: OFF';
+                break;
+            }
         }
     },
 
@@ -168,6 +230,9 @@ var Notes = {
 
     showActionBar: function(target) {
         if (this.editingNote) return;
+        if (target.noteData) {
+            this.updateScaleLockIcon(target.noteData.scaleLock);
+        }
         this.actionBar.style.display = 'flex';
         this.updateActionBarPosition(target);
     },
@@ -181,11 +246,11 @@ var Notes = {
         var canvasEl = Board.canvas.upperCanvasEl;
         var rect = canvasEl.getBoundingClientRect();
 
-        var left = bound.left + bound.width / 2 - 90 + rect.left;
+        var left = bound.left + bound.width / 2 - 110 + rect.left;
         var top = bound.top + bound.height + 10 + rect.top;
 
         if (left < 10) left = 10;
-        if (left + 180 > window.innerWidth) left = window.innerWidth - 190;
+        if (left + 220 > window.innerWidth) left = window.innerWidth - 230;
         if (top + 50 > window.innerHeight) top = bound.top + rect.top - 50;
 
         this.actionBar.style.left = left + 'px';
@@ -269,6 +334,7 @@ var Notes = {
         var bg;
         var w = options.width;
         var h = options.height;
+        var bgOpacity = options.opacity !== undefined ? options.opacity : 1;
 
         switch (options.shape) {
             case 'rounded_rectangle':
@@ -276,7 +342,8 @@ var Notes = {
                     width: w, height: h,
                     fill: options.color, rx: 16, ry: 16,
                     stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
-                    originX: 'center', originY: 'center'
+                    originX: 'center', originY: 'center',
+                    opacity: bgOpacity
                 });
                 break;
             case 'circle':
@@ -285,19 +352,22 @@ var Notes = {
                     radius: circleRadius,
                     fill: options.color,
                     stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
-                    originX: 'center', originY: 'center'
+                    originX: 'center', originY: 'center',
+                    opacity: bgOpacity
                 });
                 break;
             case 'star':
                 var starRadius = Math.max(w, h) * 0.8;
                 bg = this.createStar(starRadius, options.color);
+                bg.set('opacity', bgOpacity);
                 break;
             case 'banner':
                 bg = new fabric.Rect({
                     width: w * 1.2, height: h * 0.5,
                     fill: options.color,
                     stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
-                    originX: 'center', originY: 'center'
+                    originX: 'center', originY: 'center',
+                    opacity: bgOpacity
                 });
                 break;
             default:
@@ -305,7 +375,8 @@ var Notes = {
                     width: w, height: h,
                     fill: options.color,
                     stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
-                    originX: 'center', originY: 'center'
+                    originX: 'center', originY: 'center',
+                    opacity: bgOpacity
                 });
                 break;
         }
@@ -329,7 +400,6 @@ var Notes = {
         var group = new fabric.Group([bg, textObj], {
             left: options.x,
             top: options.y,
-            opacity: options.opacity !== undefined ? options.opacity : 1,
             shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.25)', blur: 8, offsetX: 3, offsetY: 3 }),
             customType: 'note',
             customId: options.id,
@@ -346,7 +416,7 @@ var Notes = {
                 underline: options.underline,
                 strikethrough: options.strikethrough,
                 scaleLock: options.scaleLock !== undefined ? options.scaleLock : true,
-                opacity: options.opacity !== undefined ? options.opacity : 1,
+                opacity: bgOpacity,
                 archived: false,
                 createdAt: new Date().toISOString()
             },
@@ -453,10 +523,9 @@ var Notes = {
                 + '<option value="star">Star</option>'
                 + '<option value="banner">Banner</option>'
                 + '</select>'
-                + '<label style="' + lblStyle + '">Opacity:</label>'
+                + '<label style="' + lblStyle + '">BG Opacity:</label>'
                 + '<input type="range" id="edit-opacity" min="0" max="100" value="100" style="width:60px;cursor:pointer;">'
                 + '<span id="edit-opacity-val" style="color:#A0A0BC;font-size:0.7rem;width:28px;">100%</span>'
-                + '<button id="edit-scale-lock" style="' + btnStyle + '" title="Scale lock">🔒</button>'
                 + '</div>'
                 + '<div style="display:flex;align-items:center;gap:4px;">'
                 + '<textarea id="edit-text-input" placeholder="Type your note..." style="width:200px;height:34px;padding:6px 10px;background:#1F2A48;border:1px solid #3A3A5A;border-radius:8px;color:#E8E8F0;font-size:0.85rem;font-family:Nunito,sans-serif;resize:none;outline:none;"></textarea>'
@@ -480,19 +549,14 @@ var Notes = {
                 document.getElementById('edit-opacity-val').textContent = val + '%';
                 if (Notes.editingNote) {
                     Notes.editingNote.noteData.opacity = val / 100;
-                    Notes.editingNote.set('opacity', val / 100);
+                    var objects = Notes.editingNote.getObjects();
+                    for (var i = 0; i < objects.length; i++) {
+                        if (objects[i].type !== 'textbox') {
+                            objects[i].set('opacity', val / 100);
+                        }
+                    }
                     Board.canvas.renderAll();
                 }
-            });
-
-            document.getElementById('edit-scale-lock').addEventListener('click', function() {
-                if (!Notes.editingNote) return;
-                var data = Notes.editingNote.noteData;
-                data.scaleLock = !data.scaleLock;
-                Notes.editingNote.set('lockUniScaling', data.scaleLock);
-                this.textContent = data.scaleLock ? '🔒' : '🔓';
-                this.title = data.scaleLock ? 'Scale lock: ON (font scales with note)' : 'Scale lock: OFF (font stays same size)';
-                App.showToast(data.scaleLock ? 'Scale lock ON' : 'Scale lock OFF', { duration: 1000 });
             });
 
             var fmtBtns = document.querySelectorAll('.fmt-btn');
@@ -516,9 +580,8 @@ var Notes = {
             document.getElementById('edit-align').value = data.textAlign || 'left';
             document.getElementById('edit-shape').value = data.shape;
             document.getElementById('edit-text-input').value = data.text;
-            document.getElementById('edit-opacity').value = Math.round((data.opacity || 1) * 100);
-            document.getElementById('edit-opacity-val').textContent = Math.round((data.opacity || 1) * 100) + '%';
-            document.getElementById('edit-scale-lock').textContent = data.scaleLock ? '🔒' : '🔓';
+            document.getElementById('edit-opacity').value = Math.round((data.opacity !== undefined ? data.opacity : 1) * 100);
+            document.getElementById('edit-opacity-val').textContent = Math.round((data.opacity !== undefined ? data.opacity : 1) * 100) + '%';
             this.updateFormatButtons();
         }
 
@@ -616,7 +679,10 @@ var Notes = {
                     textAlign: data.textAlign || 'left'
                 });
             } else {
-                obj.set({ fill: data.color });
+                obj.set({
+                    fill: data.color,
+                    opacity: data.opacity !== undefined ? data.opacity : 1
+                });
             }
         }
 
@@ -640,10 +706,6 @@ var Notes = {
         if (this.editingNote._savedData) {
             this.editingNote.noteData = JSON.parse(JSON.stringify(this.editingNote._savedData));
             this.applyNoteData();
-
-            this.editingNote.set('opacity', this.editingNote.noteData.opacity || 1);
-            this.editingNote.set('lockUniScaling', this.editingNote.noteData.scaleLock);
-
             delete this.editingNote._savedData;
         }
 
