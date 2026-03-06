@@ -13,8 +13,9 @@ var Board = {
     trackingChanges: true,
 
     boards: [],
-    currentBoardIndex: 0,
+    currentBoardIndex: -1,
     boardDropdownOpen: false,
+    isReady: false,
 
     init: function() {
         var container = document.getElementById('canvas-container');
@@ -40,17 +41,15 @@ var Board = {
         this.setupAddBoardButton();
         this.updateZoomDisplay();
 
-        if (this.boards.length === 0) {
-            this.createBoard('My Board', true);
-        }
+        this.isReady = true;
+        this.addNewBoard('My Board');
 
         console.log('Board initialized');
     },
 
-    createBoard: function(name, switchTo) {
-        var id = 'board-' + Date.now() + '-' + this.boards.length;
+    addNewBoard: function(name) {
         var board = {
-            id: id,
+            id: 'board-' + Date.now() + '-' + this.boards.length,
             name: name,
             objects: null,
             zoomLevel: 1,
@@ -59,17 +58,31 @@ var Board = {
         };
 
         this.boards.push(board);
+        var newIndex = this.boards.length - 1;
 
-        if (switchTo) {
-            this.switchToBoard(this.boards.length - 1);
+        if (this.currentBoardIndex >= 0) {
+            this.saveCurrentBoardState();
         }
 
+        this.currentBoardIndex = newIndex;
+        this.canvas.clear();
+        this.canvas.setBackgroundColor('#2a2a4a', function() {});
+        this.zoomLevel = 1;
+        this.canvas.setZoom(1);
+        this.canvas.absolutePan(new fabric.Point(0, 0));
+        this.placeDefaultElements();
+
+        this.updateBoardName();
         this.updateBoardCounter();
-        return board;
+        this.updateZoomDisplay();
+        this.undoStack = [];
+        this.redoStack = [];
+        this.updateUndoRedoButtons();
     },
 
     switchToBoard: function(index) {
         if (index < 0 || index >= this.boards.length) return;
+        if (index === this.currentBoardIndex) return;
 
         if (Notes && Notes.editingNote) {
             Notes.exitEditMode();
@@ -79,15 +92,14 @@ var Board = {
         }
 
         this.saveCurrentBoardState();
-
         this.currentBoardIndex = index;
         var board = this.boards[index];
 
         this.canvas.clear();
         this.canvas.setBackgroundColor('#2a2a4a', function() {});
 
-        var self = this;
-        if (board.objects) {
+        if (board.objects && board.objects.objects && board.objects.objects.length > 0) {
+            var self = this;
             this.canvas.loadFromJSON(board.objects, function() {
                 self.zoomLevel = board.zoomLevel || 1;
                 self.canvas.setZoom(self.zoomLevel);
@@ -98,22 +110,21 @@ var Board = {
             this.zoomLevel = 1;
             this.canvas.setZoom(1);
             this.canvas.absolutePan(new fabric.Point(0, 0));
-            setTimeout(function() {
-                self.placeDefaultElements();
-                self.canvas.renderAll();
-            }, 50);
+            this.placeDefaultElements();
         }
 
-        this.updateZoomDisplay();
         this.updateBoardName();
         this.updateBoardCounter();
+        this.updateZoomDisplay();
         this.undoStack = [];
         this.redoStack = [];
         this.updateUndoRedoButtons();
     },
 
     saveCurrentBoardState: function() {
-        if (this.boards.length === 0) return;
+        if (this.currentBoardIndex < 0) return;
+        if (this.currentBoardIndex >= this.boards.length) return;
+
         var board = this.boards[this.currentBoardIndex];
         if (!board) return;
 
@@ -121,8 +132,10 @@ var Board = {
         board.zoomLevel = this.zoomLevel;
 
         var vpt = this.canvas.viewportTransform;
-        board.panX = vpt[4];
-        board.panY = vpt[5];
+        if (vpt) {
+            board.panX = vpt[4];
+            board.panY = vpt[5];
+        }
     },
 
     placeDefaultElements: function() {
@@ -234,7 +247,7 @@ var Board = {
         for (var i = 0; i < this.boards.length; i++) {
             var item = document.createElement('button');
             item.textContent = this.boards[i].name;
-            item.setAttribute('data-index', i);
+            item.setAttribute('data-index', String(i));
             item.style.cssText = 'display:block;width:100%;padding:12px 16px;border:none;background:none;color:#E8E8F0;font-size:0.95rem;font-family:Nunito,sans-serif;text-align:left;cursor:pointer;';
 
             if (i === this.currentBoardIndex) {
@@ -253,7 +266,6 @@ var Board = {
                     this.style.background = 'none';
                 }
             });
-
             item.addEventListener('click', function(e) {
                 e.stopPropagation();
                 var idx = parseInt(this.getAttribute('data-index'));
@@ -301,7 +313,7 @@ var Board = {
     promptNewBoard: function() {
         var name = prompt('Enter a name for your new board:');
         if (name && name.trim()) {
-            this.createBoard(name.trim(), true);
+            this.addNewBoard(name.trim());
             App.showToast('Board "' + name.trim() + '" created!', { duration: 1500 });
         }
     },
@@ -317,6 +329,7 @@ var Board = {
     },
 
     updateBoardName: function() {
+        if (this.currentBoardIndex < 0) return;
         var name = this.boards[this.currentBoardIndex].name;
         document.getElementById('board-name-text').textContent = name;
     },
@@ -522,11 +535,7 @@ var Board = {
                 currentY = evt.clientY;
             }
 
-            var deltaX = currentX - self.lastPanX;
-            var deltaY = currentY - self.lastPanY;
-
-            self.canvas.relativePan(new fabric.Point(deltaX, deltaY));
-
+            self.canvas.relativePan(new fabric.Point(currentX - self.lastPanX, currentY - self.lastPanY));
             self.lastPanX = currentX;
             self.lastPanY = currentY;
         });
@@ -563,23 +572,18 @@ var Board = {
                 var dist = Math.sqrt(dx * dx + dy * dy);
 
                 if (lastDist > 0) {
-                    var scaleFactor = dist / lastDist;
-                    var newZoom = self.zoomLevel * scaleFactor;
-
+                    var newZoom = self.zoomLevel * (dist / lastDist);
                     if (newZoom < self.minZoom) newZoom = self.minZoom;
                     if (newZoom > self.maxZoom) newZoom = self.maxZoom;
 
                     var midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                     var midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-
                     var canvasRect = self.canvas.upperCanvasEl.getBoundingClientRect();
-                    var point = new fabric.Point(midX - canvasRect.left, midY - canvasRect.top);
 
                     self.zoomLevel = newZoom;
-                    self.canvas.zoomToPoint(point, newZoom);
+                    self.canvas.zoomToPoint(new fabric.Point(midX - canvasRect.left, midY - canvasRect.top), newZoom);
                     self.updateZoomDisplay();
                 }
-
                 lastDist = dist;
             }
         }, { passive: false });
@@ -594,7 +598,6 @@ var Board = {
 
     setupResize: function() {
         var self = this;
-
         window.addEventListener('resize', function() {
             var container = document.getElementById('canvas-container');
             self.canvas.setWidth(container.offsetWidth);
@@ -604,24 +607,18 @@ var Board = {
     },
 
     zoomTo: function(newZoom) {
-        var center = new fabric.Point(
-            this.canvas.getWidth() / 2,
-            this.canvas.getHeight() / 2
-        );
-        this.zoomToPoint(newZoom, center);
+        this.zoomToPoint(newZoom, new fabric.Point(this.canvas.getWidth() / 2, this.canvas.getHeight() / 2));
     },
 
     zoomToPoint: function(newZoom, point) {
         if (newZoom < this.minZoom) newZoom = this.minZoom;
         if (newZoom > this.maxZoom) newZoom = this.maxZoom;
-
         this.zoomLevel = newZoom;
         this.canvas.zoomToPoint(point, newZoom);
         this.updateZoomDisplay();
     },
 
     updateZoomDisplay: function() {
-        var pct = Math.round(this.zoomLevel * 100);
-        document.getElementById('zoom-level').textContent = pct + '%';
+        document.getElementById('zoom-level').textContent = Math.round(this.zoomLevel * 100) + '%';
     }
 };
