@@ -14,41 +14,31 @@ var Notes = {
 
     setupDoubleClickCreate: function() {
         var self = this;
-        var lastClickTime = 0;
-        var lastClickX = 0;
-        var lastClickY = 0;
+        var lastTapTime = 0;
 
-        Board.canvas.on('mouse:down', function(opt) {
+        Board.canvas.on('mouse:dblclick', function(opt) {
             if (opt.target) return;
+            if (self.crosshairMode) return;
+
+            var pointer = Board.canvas.getPointer(opt.e);
+            self.createNoteAt(pointer.x, pointer.y);
+        });
+
+        Board.canvas.on('mouse:up', function(opt) {
+            if (opt.target) return;
+            if (self.crosshairMode) return;
             if (Board.isPanning) return;
+            if (!opt.e.touches && opt.e.pointerType !== 'touch') return;
 
             var now = Date.now();
-            var evt = opt.e;
-            var clientX, clientY;
-
-            if (evt.touches && evt.touches.length === 1) {
-                clientX = evt.touches[0].clientX;
-                clientY = evt.touches[0].clientY;
-            } else {
-                clientX = evt.clientX;
-                clientY = evt.clientY;
-            }
-
-            var dx = clientX - lastClickX;
-            var dy = clientY - lastClickY;
-            var dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (now - lastClickTime < 400 && dist < 20) {
-                var pointer = Board.canvas.getPointer(evt);
+            if (now - lastTapTime < 400) {
+                var pointer = Board.canvas.getPointer(opt.e);
                 self.createNoteAt(pointer.x, pointer.y);
-                lastClickTime = 0;
+                lastTapTime = 0;
             } else {
-                lastClickTime = now;
-                lastClickX = clientX;
-                lastClickY = clientY;
+                lastTapTime = now;
             }
         });
-    },
 
     setupFloatingButton: function() {
         var self = this;
