@@ -89,18 +89,24 @@ var Notes = {
     },
 
     setupScaleLockBehavior: function() {
+        var self = this;
+
         Board.canvas.on('object:scaling', function(opt) {
             var target = opt.target;
             if (!target || target.customType !== 'note') return;
-            if (!target.noteData || target.noteData.scaleLock) return;
+            if (!target.noteData) return;
 
-            var objects = target.getObjects();
-            for (var i = 0; i < objects.length; i++) {
-                if (objects[i].type === 'textbox') {
-                    objects[i].set({
-                        scaleX: 1 / target.scaleX,
-                        scaleY: 1 / target.scaleY
-                    });
+            if (!target.noteData.scaleLock) {
+                var objects = target.getObjects();
+                for (var i = 0; i < objects.length; i++) {
+                    if (objects[i].type === 'textbox') {
+                        var invScaleX = 1 / target.scaleX;
+                        var invScaleY = 1 / target.scaleY;
+                        objects[i].set({
+                            scaleX: invScaleX,
+                            scaleY: invScaleY
+                        });
+                    }
                 }
             }
         });
@@ -108,21 +114,27 @@ var Notes = {
         Board.canvas.on('object:modified', function(opt) {
             var target = opt.target;
             if (!target || target.customType !== 'note') return;
-            if (!target.noteData || target.noteData.scaleLock) return;
+            if (!target.noteData) return;
 
-            var newWidth = target.width * target.scaleX;
-            var objects = target.getObjects();
-            for (var i = 0; i < objects.length; i++) {
-                if (objects[i].type === 'textbox') {
-                    var textPadding = target.noteData.shape === 'circle' ? 0.7 : (target.noteData.shape === 'star' ? 0.6 : 0.9);
-                    objects[i].set({
-                        width: (newWidth * textPadding) - 20,
-                        scaleX: 1 / target.scaleX,
-                        scaleY: 1 / target.scaleY
-                    });
+            if (!target.noteData.scaleLock) {
+                var newWidth = target.width * target.scaleX;
+                var shape = target.noteData.shape;
+                var textPad = shape === 'circle' ? 0.55 : (shape === 'star' ? 0.5 : 0.9);
+                var newTextWidth = (newWidth * textPad) - 10;
+                if (newTextWidth < 30) newTextWidth = 30;
+
+                var objects = target.getObjects();
+                for (var i = 0; i < objects.length; i++) {
+                    if (objects[i].type === 'textbox') {
+                        objects[i].set({
+                            width: newTextWidth,
+                            scaleX: 1 / target.scaleX,
+                            scaleY: 1 / target.scaleY
+                        });
+                    }
                 }
+                Board.canvas.renderAll();
             }
-            Board.canvas.renderAll();
         });
     },
 
@@ -335,6 +347,7 @@ var Notes = {
         var w = options.width;
         var h = options.height;
         var bgOpacity = options.opacity !== undefined ? options.opacity : 1;
+        var shapeSize = Math.max(w, h) * 0.65;
 
         switch (options.shape) {
             case 'rounded_rectangle':
@@ -347,9 +360,8 @@ var Notes = {
                 });
                 break;
             case 'circle':
-                var circleRadius = Math.max(w, h) * 0.75;
                 bg = new fabric.Circle({
-                    radius: circleRadius,
+                    radius: shapeSize,
                     fill: options.color,
                     stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1,
                     originX: 'center', originY: 'center',
@@ -357,8 +369,7 @@ var Notes = {
                 });
                 break;
             case 'star':
-                var starRadius = Math.max(w, h) * 0.8;
-                bg = this.createStar(starRadius, options.color);
+                bg = this.createStar(shapeSize, options.color);
                 bg.set('opacity', bgOpacity);
                 break;
             case 'banner':
@@ -381,7 +392,14 @@ var Notes = {
                 break;
         }
 
-        var textWidth = options.shape === 'circle' ? w * 0.7 : (options.shape === 'star' ? w * 0.6 : w - 20);
+        var textWidth;
+        if (options.shape === 'circle') {
+            textWidth = shapeSize * 1.1;
+        } else if (options.shape === 'star') {
+            textWidth = shapeSize * 0.85;
+        } else {
+            textWidth = w - 20;
+        }
 
         var textObj = new fabric.Textbox(options.text, {
             width: textWidth,
@@ -523,8 +541,8 @@ var Notes = {
                 + '<option value="star">Star</option>'
                 + '<option value="banner">Banner</option>'
                 + '</select>'
-                + '<label style="' + lblStyle + '">BG Opacity:</label>'
-                + '<input type="range" id="edit-opacity" min="0" max="100" value="100" style="width:60px;cursor:pointer;">'
+                + '<label style="' + lblStyle + '">BG:</label>'
+                + '<input type="range" id="edit-opacity" min="0" max="100" value="100" style="width:50px;cursor:pointer;">'
                 + '<span id="edit-opacity-val" style="color:#A0A0BC;font-size:0.7rem;width:28px;">100%</span>'
                 + '</div>'
                 + '<div style="display:flex;align-items:center;gap:4px;">'
