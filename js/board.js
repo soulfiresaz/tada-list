@@ -12,11 +12,6 @@ var Board = {
     maxHistory: 20,
     trackingChanges: true,
 
-    boards: [],
-    currentBoardIndex: -1,
-    boardDropdownOpen: false,
-    isReady: false,
-
     init: function() {
         var container = document.getElementById('canvas-container');
         var width = container.offsetWidth;
@@ -37,105 +32,10 @@ var Board = {
         this.setupPinchZoom();
         this.setupResize();
         this.setupUndoRedo();
-        this.setupBoardDropdown();
-        this.setupAddBoardButton();
         this.updateZoomDisplay();
-
-        this.isReady = true;
-        this.addNewBoard('My Board');
-
-        console.log('Board initialized');
-    },
-
-    addNewBoard: function(name) {
-        var board = {
-            id: 'board-' + Date.now() + '-' + this.boards.length,
-            name: name,
-            objects: null,
-            zoomLevel: 1,
-            panX: 0,
-            panY: 0
-        };
-
-        this.boards.push(board);
-        var newIndex = this.boards.length - 1;
-
-        if (this.currentBoardIndex >= 0) {
-            this.saveCurrentBoardState();
-        }
-
-        this.currentBoardIndex = newIndex;
-        this.canvas.clear();
-        this.canvas.setBackgroundColor('#2a2a4a', function() {});
-        this.zoomLevel = 1;
-        this.canvas.setZoom(1);
-        this.canvas.absolutePan(new fabric.Point(0, 0));
         this.placeDefaultElements();
 
-        this.updateBoardName();
-        this.updateBoardCounter();
-        this.updateZoomDisplay();
-        this.undoStack = [];
-        this.redoStack = [];
-        this.updateUndoRedoButtons();
-    },
-
-    switchToBoard: function(index) {
-        if (index < 0 || index >= this.boards.length) return;
-        if (index === this.currentBoardIndex) return;
-
-        if (Notes && Notes.editingNote) {
-            Notes.exitEditMode();
-        }
-        if (Notes) {
-            Notes.hideActionBar();
-        }
-
-        this.saveCurrentBoardState();
-        this.currentBoardIndex = index;
-        var board = this.boards[index];
-
-        this.canvas.clear();
-        this.canvas.setBackgroundColor('#2a2a4a', function() {});
-
-        if (board.objects && board.objects.objects && board.objects.objects.length > 0) {
-            var self = this;
-            this.canvas.loadFromJSON(board.objects, function() {
-                self.zoomLevel = board.zoomLevel || 1;
-                self.canvas.setZoom(self.zoomLevel);
-                self.canvas.absolutePan(new fabric.Point(board.panX || 0, board.panY || 0));
-                self.canvas.renderAll();
-            });
-        } else {
-            this.zoomLevel = 1;
-            this.canvas.setZoom(1);
-            this.canvas.absolutePan(new fabric.Point(0, 0));
-            this.placeDefaultElements();
-        }
-
-        this.updateBoardName();
-        this.updateBoardCounter();
-        this.updateZoomDisplay();
-        this.undoStack = [];
-        this.redoStack = [];
-        this.updateUndoRedoButtons();
-    },
-
-    saveCurrentBoardState: function() {
-        if (this.currentBoardIndex < 0) return;
-        if (this.currentBoardIndex >= this.boards.length) return;
-
-        var board = this.boards[this.currentBoardIndex];
-        if (!board) return;
-
-        board.objects = this.canvas.toJSON(['customType', 'customId', 'noteData', 'lockUniScaling', 'padding', 'perPixelTargetFind']);
-        board.zoomLevel = this.zoomLevel;
-
-        var vpt = this.canvas.viewportTransform;
-        if (vpt) {
-            board.panX = vpt[4];
-            board.panY = vpt[5];
-        }
+        console.log('Board initialized: ' + width + 'x' + height);
     },
 
     placeDefaultElements: function() {
@@ -177,8 +77,6 @@ var Board = {
             {
                 stroke: '#6C6C8A',
                 strokeWidth: 3,
-                perPixelTargetFind: false,
-                padding: 15,
                 strokeDashArray: [8, 4],
                 selectable: true,
                 hasControls: true,
@@ -204,139 +102,6 @@ var Board = {
         this.canvas.add(todoLabel);
         this.canvas.add(tadaLabel);
         this.canvas.renderAll();
-    },
-
-    setupBoardDropdown: function() {
-        var self = this;
-
-        var dropdown = document.createElement('div');
-        dropdown.id = 'board-dropdown';
-        dropdown.style.cssText = 'display:none;position:fixed;z-index:300;background:#162447;border:1px solid #2A2A4A;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-height:400px;overflow-y:auto;min-width:220px;';
-        document.body.appendChild(dropdown);
-
-        document.getElementById('board-name-btn').addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (self.boardDropdownOpen) {
-                self.closeBoardDropdown();
-            } else {
-                self.openBoardDropdown();
-            }
-        });
-
-        document.getElementById('board-name-btn').addEventListener('dblclick', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            self.closeBoardDropdown();
-            self.startRenameBoard();
-        });
-
-        document.addEventListener('click', function() {
-            if (self.boardDropdownOpen) {
-                self.closeBoardDropdown();
-            }
-        });
-    },
-
-    openBoardDropdown: function() {
-        var dropdown = document.getElementById('board-dropdown');
-        var btn = document.getElementById('board-name-btn');
-        var rect = btn.getBoundingClientRect();
-
-        dropdown.innerHTML = '';
-
-        for (var i = 0; i < this.boards.length; i++) {
-            var item = document.createElement('button');
-            item.textContent = this.boards[i].name;
-            item.setAttribute('data-index', String(i));
-            item.style.cssText = 'display:block;width:100%;padding:12px 16px;border:none;background:none;color:#E8E8F0;font-size:0.95rem;font-family:Nunito,sans-serif;text-align:left;cursor:pointer;';
-
-            if (i === this.currentBoardIndex) {
-                item.style.background = '#263354';
-                item.style.fontWeight = '700';
-                item.style.color = '#FFD700';
-            }
-
-            item.addEventListener('mouseover', function() {
-                if (parseInt(this.getAttribute('data-index')) !== Board.currentBoardIndex) {
-                    this.style.background = '#1F2A48';
-                }
-            });
-            item.addEventListener('mouseout', function() {
-                if (parseInt(this.getAttribute('data-index')) !== Board.currentBoardIndex) {
-                    this.style.background = 'none';
-                }
-            });
-            item.addEventListener('click', function(e) {
-                e.stopPropagation();
-                var idx = parseInt(this.getAttribute('data-index'));
-                Board.switchToBoard(idx);
-                Board.closeBoardDropdown();
-            });
-
-            dropdown.appendChild(item);
-        }
-
-        var divider = document.createElement('div');
-        divider.style.cssText = 'height:1px;background:#2A2A4A;margin:4px 0;';
-        dropdown.appendChild(divider);
-
-        var addBtn = document.createElement('button');
-        addBtn.textContent = '+ Add New Board';
-        addBtn.style.cssText = 'display:block;width:100%;padding:12px 16px;border:none;background:none;color:#FFD700;font-size:0.95rem;font-family:Nunito,sans-serif;text-align:left;cursor:pointer;font-weight:600;';
-        addBtn.addEventListener('mouseover', function() { this.style.background = '#1F2A48'; });
-        addBtn.addEventListener('mouseout', function() { this.style.background = 'none'; });
-        addBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            Board.closeBoardDropdown();
-            Board.promptNewBoard();
-        });
-        dropdown.appendChild(addBtn);
-
-        dropdown.style.left = rect.left + 'px';
-        dropdown.style.top = rect.bottom + 4 + 'px';
-        dropdown.style.display = 'block';
-        this.boardDropdownOpen = true;
-    },
-
-    closeBoardDropdown: function() {
-        document.getElementById('board-dropdown').style.display = 'none';
-        this.boardDropdownOpen = false;
-    },
-
-    setupAddBoardButton: function() {
-        var self = this;
-        document.getElementById('add-board-btn').addEventListener('click', function() {
-            self.promptNewBoard();
-        });
-    },
-
-    promptNewBoard: function() {
-        var name = prompt('Enter a name for your new board:');
-        if (name && name.trim()) {
-            this.addNewBoard(name.trim());
-            App.showToast('Board "' + name.trim() + '" created!', { duration: 1500 });
-        }
-    },
-
-    startRenameBoard: function() {
-        var currentName = this.boards[this.currentBoardIndex].name;
-        var newName = prompt('Rename board:', currentName);
-        if (newName && newName.trim() && newName.trim() !== currentName) {
-            this.boards[this.currentBoardIndex].name = newName.trim();
-            this.updateBoardName();
-            App.showToast('Board renamed to "' + newName.trim() + '"', { duration: 1500 });
-        }
-    },
-
-    updateBoardName: function() {
-        if (this.currentBoardIndex < 0) return;
-        var name = this.boards[this.currentBoardIndex].name;
-        document.getElementById('board-name-text').textContent = name;
-    },
-
-    updateBoardCounter: function() {
-        var counter = (this.currentBoardIndex + 1) + ' of ' + this.boards.length;
-        document.getElementById('board-counter').textContent = counter;
     },
 
     setupUndoRedo: function() {
@@ -535,7 +300,11 @@ var Board = {
                 currentY = evt.clientY;
             }
 
-            self.canvas.relativePan(new fabric.Point(currentX - self.lastPanX, currentY - self.lastPanY));
+            var deltaX = currentX - self.lastPanX;
+            var deltaY = currentY - self.lastPanY;
+
+            self.canvas.relativePan(new fabric.Point(deltaX, deltaY));
+
             self.lastPanX = currentX;
             self.lastPanY = currentY;
         });
@@ -572,18 +341,23 @@ var Board = {
                 var dist = Math.sqrt(dx * dx + dy * dy);
 
                 if (lastDist > 0) {
-                    var newZoom = self.zoomLevel * (dist / lastDist);
+                    var scaleFactor = dist / lastDist;
+                    var newZoom = self.zoomLevel * scaleFactor;
+
                     if (newZoom < self.minZoom) newZoom = self.minZoom;
                     if (newZoom > self.maxZoom) newZoom = self.maxZoom;
 
                     var midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                     var midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
                     var canvasRect = self.canvas.upperCanvasEl.getBoundingClientRect();
+                    var point = new fabric.Point(midX - canvasRect.left, midY - canvasRect.top);
 
                     self.zoomLevel = newZoom;
-                    self.canvas.zoomToPoint(new fabric.Point(midX - canvasRect.left, midY - canvasRect.top), newZoom);
+                    self.canvas.zoomToPoint(point, newZoom);
                     self.updateZoomDisplay();
                 }
+
                 lastDist = dist;
             }
         }, { passive: false });
@@ -598,6 +372,7 @@ var Board = {
 
     setupResize: function() {
         var self = this;
+
         window.addEventListener('resize', function() {
             var container = document.getElementById('canvas-container');
             self.canvas.setWidth(container.offsetWidth);
@@ -607,18 +382,24 @@ var Board = {
     },
 
     zoomTo: function(newZoom) {
-        this.zoomToPoint(newZoom, new fabric.Point(this.canvas.getWidth() / 2, this.canvas.getHeight() / 2));
+        var center = new fabric.Point(
+            this.canvas.getWidth() / 2,
+            this.canvas.getHeight() / 2
+        );
+        this.zoomToPoint(newZoom, center);
     },
 
     zoomToPoint: function(newZoom, point) {
         if (newZoom < this.minZoom) newZoom = this.minZoom;
         if (newZoom > this.maxZoom) newZoom = this.maxZoom;
+
         this.zoomLevel = newZoom;
         this.canvas.zoomToPoint(point, newZoom);
         this.updateZoomDisplay();
     },
 
     updateZoomDisplay: function() {
-        document.getElementById('zoom-level').textContent = Math.round(this.zoomLevel * 100) + '%';
+        var pct = Math.round(this.zoomLevel * 100);
+        document.getElementById('zoom-level').textContent = pct + '%';
     }
 };
