@@ -86,17 +86,22 @@ var Board = {
         this.canvas.clear();
         this.canvas.setBackgroundColor('#2a2a4a', function() {});
 
+        var self = this;
         if (board.objects) {
-            var self = this;
             this.canvas.loadFromJSON(board.objects, function() {
+                self.zoomLevel = board.zoomLevel || 1;
+                self.canvas.setZoom(self.zoomLevel);
+                self.canvas.absolutePan(new fabric.Point(board.panX || 0, board.panY || 0));
                 self.canvas.renderAll();
             });
-            this.zoomLevel = board.zoomLevel || 1;
-            this.canvas.setZoom(this.zoomLevel);
-            this.canvas.absolutePan(new fabric.Point(board.panX || 0, board.panY || 0));
         } else {
             this.zoomLevel = 1;
-            this.placeDefaultElements();
+            this.canvas.setZoom(1);
+            this.canvas.absolutePan(new fabric.Point(0, 0));
+            setTimeout(function() {
+                self.placeDefaultElements();
+                self.canvas.renderAll();
+            }, 50);
         }
 
         this.updateZoomDisplay();
@@ -205,7 +210,6 @@ var Board = {
             }
         });
 
-        var lastClickTime = 0;
         document.getElementById('board-name-btn').addEventListener('dblclick', function(e) {
             e.stopPropagation();
             e.preventDefault();
