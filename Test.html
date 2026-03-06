@@ -3,76 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaDa List - Login Test</title>
+    <title>Board Debug</title>
     <style>
-        body { font-family: Arial; padding: 20px; background: #111; color: #0f0; font-size: 18px; }
-        input { padding: 12px; font-size: 18px; width: 100%; margin: 8px 0; box-sizing: border-box; }
-        button { padding: 15px 30px; font-size: 20px; margin: 15px 0; background: #FFD700; color: #111; border: none; width: 100%; }
-        #log { white-space: pre-wrap; line-height: 1.8; margin-top: 20px; }
-        .toggle { background: none; color: #0f0; border: 1px solid #0f0; width: auto; padding: 5px 15px; font-size: 14px; margin-left: 10px; }
+        body { font-family: Arial; padding: 10px; background: #111; color: #0f0; font-size: 16px; }
+        #log { white-space: pre-wrap; line-height: 1.6; }
     </style>
 </head>
 <body>
-    <h1>TaDa List - Login Test</h1>
-    <label>Email:</label>
-    <input type="email" id="em" value="suziaz69@gmail.com">
-    <label>Password:</label>
-    <div style="display:flex; align-items:center;">
-        <input type="password" id="pw" placeholder="Your password" style="flex:1;">
-        <button class="toggle" id="toggle-pw">Show</button>
-    </div>
-    <button id="go">Log In</button>
+    <h2>Board Debug</h2>
+    <canvas id="test-canvas" width="400" height="300" style="border:1px solid #0f0;"></canvas>
     <div id="log"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <script>
-        document.getElementById('toggle-pw').addEventListener('click', function() {
-            var pw = document.getElementById('pw');
-            if (pw.type === 'password') { pw.type = 'text'; this.textContent = 'Hide'; }
-            else { pw.type = 'password'; this.textContent = 'Show'; }
-        });
         var log = document.getElementById('log');
         function addLog(msg) { log.textContent += msg + '\n'; }
-        var script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-        script.onload = function() {
-            addLog('Supabase loaded OK');
-            var sb = window.supabase.createClient(
-                'https://mutnhfdqbuefkvguljhm.supabase.co',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dG5oZmRxYnVlZmt2Z3VsamhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NDczMTMsImV4cCI6MjA4ODIyMzMxM30.IpRi1vAx752EpRttONAReO5UbzuInzHZHvhabuiK4Sw'
-            );
-            document.getElementById('go').addEventListener('click', function() {
-                var email = document.getElementById('em').value;
-                var pw = document.getElementById('pw').value;
-                addLog('Trying to log in...');
-                sb.auth.signInWithPassword({
-                    email: email,
-                    password: pw
-                }).then(function(result) {
-                    if (result.error) {
-                        addLog('ERROR: ' + result.error.message);
-                    } else {
-                        addLog('LOGIN SUCCESS!');
-                        addLog('User: ' + result.data.user.email);
-                        addLog('ID: ' + result.data.user.id);
-                        addLog('Now loading profile...');
-                        sb.from('profiles').select('*').eq('id', result.data.user.id).single().then(function(pResult) {
-                            if (pResult.error) {
-                                addLog('Profile ERROR: ' + pResult.error.message);
-                            } else {
-                                addLog('Profile loaded!');
-                                addLog('Role: ' + pResult.data.role);
-                                addLog('Storage limit: ' + pResult.data.storage_limit_mb + 'MB');
-                                addLog('');
-                                addLog('EVERYTHING WORKS! Your main app login issue is just the HTML buttons.');
-                                addLog('Go tell Claude this worked and we will fix the main app.');
-                            }
-                        });
-                    }
-                }).catch(function(err) {
-                    addLog('CATCH: ' + err.message);
-                });
+
+        try {
+            addLog('Step 1: Creating canvas...');
+            var canvas = new fabric.Canvas('test-canvas', {
+                backgroundColor: '#2a2a4a'
             });
-        };
-        document.body.appendChild(script);
+            addLog('Step 2: Canvas created OK');
+
+            addLog('Step 3: Creating To Do label...');
+            var todo = new fabric.IText('To Do', {
+                left: 50,
+                top: 40,
+                fontFamily: 'Arial',
+                fontSize: 30,
+                fill: '#FFD700'
+            });
+            canvas.add(todo);
+            addLog('Step 4: To Do added. Objects on canvas: ' + canvas.getObjects().length);
+
+            addLog('Step 5: Creating divider...');
+            var line = new fabric.Line([200, 20, 200, 280], {
+                stroke: '#6C6C8A',
+                strokeWidth: 3,
+                padding: 15
+            });
+            canvas.add(line);
+            addLog('Step 6: Divider added. Objects on canvas: ' + canvas.getObjects().length);
+
+            addLog('Step 7: Creating Ta Da label...');
+            var tada = new fabric.IText('Ta Da', {
+                left: 250,
+                top: 40,
+                fontFamily: 'Arial',
+                fontSize: 30,
+                fill: '#2ED573'
+            });
+            canvas.add(tada);
+            addLog('Step 8: Ta Da added. Objects on canvas: ' + canvas.getObjects().length);
+
+            canvas.renderAll();
+            addLog('Step 9: renderAll done. EVERYTHING OK!');
+
+        } catch(e) {
+            addLog('ERROR: ' + e.message);
+            addLog('Stack: ' + e.stack);
+        }
     </script>
 </body>
 </html>
