@@ -5,7 +5,10 @@ var Notes = {
     defaultColor: '#FFEB3B',
     noteCount: 0,
     editingNote: null,
+    editingLabel: null,
     actionBar: null,
+    labelActionBar: null,
+    overlayTextarea: null,
 
     init: function() {
         this.setupDoubleClickCreate();
@@ -13,6 +16,7 @@ var Notes = {
         this.setupEscapeCancel();
         this.setupSelectionHandlers();
         this.createActionBar();
+        this.createLabelActionBar();
         this.setupDeleteKey();
         this.setupScaleLockBehavior();
         console.log('Notes module initialized');
@@ -23,8 +27,15 @@ var Notes = {
         var lastTapTime = 0;
 
         Board.canvas.on('mouse:dblclick', function(opt) {
-            if (opt.target) return;
             if (self.crosshairMode) return;
+
+            if (opt.target && opt.target.customType === 'note') {
+                self.enterEditMode(opt.target);
+                return;
+            }
+
+            if (opt.target) return;
+
             var pointer = Board.canvas.getPointer(opt.e);
             self.createNoteAt(pointer.x, pointer.y);
         });
@@ -64,6 +75,8 @@ var Notes = {
                     self.exitCrosshairMode();
                 } else if (self.editingNote) {
                     self.discardEdit();
+                } else if (self.editingLabel) {
+                    self.exitLabelEditMode();
                 }
             }
         });
@@ -75,22 +88,37 @@ var Notes = {
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 var active = Board.canvas.getActiveObject();
                 if (!active) return;
-                if (active.customType === 'divider') {
-                    e.preventDefault();
-                    App.showToast('The divider line cannot be deleted.');
-                    return;
-                }
+                if (active.isEditing) return;
+
                 if (active.customType === 'note' && !self.editingNote) {
                     e.preventDefault();
                     self.deleteNote(active);
+                } else if (active.customType === 'label' || active.customType === 'divider') {
+                    e.preventDefault();
+                    self.deleteElement(active);
                 }
             }
         });
     },
 
-    setupScaleLockBehavior: function() {
-        var self = this;
+    deleteElement: function(element) {
+        this.hideActionBar();
+        this.hideLabelActionBar();
+        Board.canvas.remove(element);
+        Board.canvas.discardActiveObject();
+        Board.canvas.renderAll();
 
+        var typeName = element.customType === 'divider' ? 'Divider' : 'Label';
+        App.showToast(typeName + ' deleted', {
+            duration: 5000,
+            onUndo: function() {
+                Board.canvas.add(element);
+                Board.canvas.renderAll();
+            }
+        });
+    },
+
+    setupScaleLockBehavior: function() {
         Board.canvas.on('object:scaling', function(opt) {
             var target = opt.target;
             if (!target || target.customType !== 'note') return;
@@ -100,11 +128,9 @@ var Notes = {
                 var objects = target.getObjects();
                 for (var i = 0; i < objects.length; i++) {
                     if (objects[i].type === 'textbox') {
-                        var invScaleX = 1 / target.scaleX;
-                        var invScaleY = 1 / target.scaleY;
                         objects[i].set({
-                            scaleX: invScaleX,
-                            scaleY: invScaleY
+                            scaleX: 1 / target.scaleX,
+                            scaleY: 1 / target.scaleY
                         });
                     }
                 }
@@ -144,11 +170,11 @@ var Notes = {
         bar.style.cssText = 'display:none;position:fixed;z-index:95;background:#1F2A48;border:1px solid #2A2A4A;border-radius:12px;padding:4px;box-shadow:0 4px 16px rgba(0,0,0,0.4);';
 
         var actions = [
-            { icon: '🗑️', title: 'Delete', action: 'delete' },
-            { icon: '🔒', title: 'Scale lock: ON', action: 'scalelock' },
-            { icon: '✏️', title: 'Edit', action: 'edit' },
-            { icon: '📋', title: 'Duplicate', action: 'duplicate' },
-            { icon: '📦', title: 'Archive', action: 'archive' }
+            { icon: '\u{1F5D1}\u{FE0F}', title: 'Delete', action: 'delete' },
+            { icon: '\u{1F512}', title: 'Scale lock: ON', action: 'scalelock' },
+            { icon: '\u{270F}\u{FE0F}', title: 'Edit', action: 'edit' },
+            { icon: '\u{1F4CB}', title: 'Duplicate', action: 'duplicate' },
+            { icon: '\u{1F4E6}', title: 'Archive', action: 'archive' }
         ];
 
         for (var i = 0; i < actions.length; i++) {
@@ -167,6 +193,33 @@ var Notes = {
         this.actionBar = bar;
     },
 
+    createLabelActionBar: function() {
+        var bar = document.createElement('div');
+        bar.id = 'label-action-bar';
+        bar.style.cssText = 'display:none;position:fixed;z-index:95;background:#1F2A48;border:1px solid #2A2A4A;border-radius:12px;padding:4px;box-shadow:0 4px 16px rgba(0,0,0,0.4);';
+
+        var actions = [
+            { icon: '\u{1F5D1}\u{FE0F}', title: 'Delete', action: 'label-delete' },
+            { icon: '\u{270F}\u{FE0F}', title: 'Format', action: 'label-edit' },
+            { icon: '\u{1F4CB}', title: 'Duplicate', action: 'label-duplicate' }
+        ];
+
+        for (var i = 0; i < actions.length; i++) {
+            var btn = document.createElement('button');
+            btn.textContent = actions[i].icon;
+            btn.title = actions[i].title;
+            btn.setAttribute('data-action', actions[i].action);
+            btn.style.cssText = 'width:40px;height:40px;border:none;background:none;font-size:1.2rem;cursor:pointer;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;';
+            btn.addEventListener('click', this.handleLabelActionClick.bind(this));
+            btn.addEventListener('mouseover', function() { this.style.background = '#263354'; });
+            btn.addEventListener('mouseout', function() { this.style.background = 'none'; });
+            bar.appendChild(btn);
+        }
+
+        document.body.appendChild(bar);
+        this.labelActionBar = bar;
+    },
+
     handleActionClick: function(e) {
         var action = e.currentTarget.getAttribute('data-action');
         var active = Board.canvas.getActiveObject();
@@ -181,11 +234,64 @@ var Notes = {
         }
     },
 
+    handleLabelActionClick: function(e) {
+        var action = e.currentTarget.getAttribute('data-action');
+        var active = Board.canvas.getActiveObject();
+        if (!active) return;
+
+        switch (action) {
+            case 'label-delete': this.deleteElement(active); break;
+            case 'label-duplicate': this.duplicateLabel(active); break;
+            case 'label-edit': this.enterLabelEditMode(active); break;
+        }
+    },
+
+    duplicateLabel: function(label) {
+        var newLabel = new fabric.IText(label.text, {
+            left: label.left + 20,
+            top: label.top + 20,
+            fontFamily: label.fontFamily,
+            fontSize: label.fontSize,
+            fill: label.fill,
+            fontWeight: label.fontWeight,
+            fontStyle: label.fontStyle,
+            underline: label.underline,
+            linethrough: label.linethrough,
+            textAlign: label.textAlign,
+            shadow: label.shadow ? new fabric.Shadow({
+                color: label.shadow.color,
+                blur: label.shadow.blur,
+                offsetX: label.shadow.offsetX,
+                offsetY: label.shadow.offsetY
+            }) : null,
+            editable: true,
+            selectable: true,
+            hasControls: true,
+            hasBorders: true,
+            customType: 'label',
+            customId: 'label-' + Date.now()
+        });
+
+        Board.canvas.add(newLabel);
+        Board.canvas.setActiveObject(newLabel);
+        Board.canvas.renderAll();
+        App.showToast('Label duplicated', { duration: 1500 });
+    },
+
     toggleScaleLock: function(noteGroup) {
         if (!noteGroup || !noteGroup.noteData) return;
         var data = noteGroup.noteData;
+
+        var currentWidth = noteGroup.width * noteGroup.scaleX;
+        var currentHeight = noteGroup.height * noteGroup.scaleY;
+
         data.scaleLock = !data.scaleLock;
-        noteGroup.set('lockUniScaling', data.scaleLock);
+
+        if (data.scaleLock) {
+            noteGroup.set('lockUniScaling', true);
+        } else {
+            noteGroup.set('lockUniScaling', false);
+        }
 
         this.updateScaleLockIcon(data.scaleLock);
         App.showToast(data.scaleLock ? 'Scale lock ON - text scales with note' : 'Scale lock OFF - text stays same size', { duration: 1500 });
@@ -195,7 +301,7 @@ var Notes = {
         var buttons = this.actionBar.querySelectorAll('button');
         for (var i = 0; i < buttons.length; i++) {
             if (buttons[i].getAttribute('data-action') === 'scalelock') {
-                buttons[i].textContent = locked ? '🔒' : '🔓';
+                buttons[i].textContent = locked ? '\u{1F512}' : '\u{1F513}';
                 buttons[i].title = locked ? 'Scale lock: ON' : 'Scale lock: OFF';
                 break;
             }
@@ -207,29 +313,24 @@ var Notes = {
 
         Board.canvas.on('selection:created', function(opt) {
             var target = opt.selected ? opt.selected[0] : null;
-            if (target && target.customType === 'note') {
-                self.showActionBar(target);
-            } else {
-                self.hideActionBar();
-            }
+            self.handleSelection(target);
         });
 
         Board.canvas.on('selection:updated', function(opt) {
             var target = opt.selected ? opt.selected[0] : null;
-            if (target && target.customType === 'note') {
-                self.showActionBar(target);
-            } else {
-                self.hideActionBar();
-            }
+            self.handleSelection(target);
         });
 
         Board.canvas.on('selection:cleared', function() {
             self.hideActionBar();
+            self.hideLabelActionBar();
         });
 
         Board.canvas.on('object:moving', function(opt) {
             if (opt.target && opt.target.customType === 'note') {
                 self.updateActionBarPosition(opt.target);
+            } else if (opt.target && (opt.target.customType === 'label' || opt.target.customType === 'divider')) {
+                self.updateLabelActionBarPosition(opt.target);
             }
         });
 
@@ -238,6 +339,25 @@ var Notes = {
                 self.updateActionBarPosition(opt.target);
             }
         });
+    },
+
+    handleSelection: function(target) {
+        if (!target) {
+            this.hideActionBar();
+            this.hideLabelActionBar();
+            return;
+        }
+
+        if (target.customType === 'note') {
+            this.hideLabelActionBar();
+            this.showActionBar(target);
+        } else if (target.customType === 'label' || target.customType === 'divider') {
+            this.hideActionBar();
+            this.showLabelActionBar(target);
+        } else {
+            this.hideActionBar();
+            this.hideLabelActionBar();
+        }
     },
 
     showActionBar: function(target) {
@@ -251,6 +371,16 @@ var Notes = {
 
     hideActionBar: function() {
         this.actionBar.style.display = 'none';
+    },
+
+    showLabelActionBar: function(target) {
+        if (this.editingLabel) return;
+        this.labelActionBar.style.display = 'flex';
+        this.updateLabelActionBarPosition(target);
+    },
+
+    hideLabelActionBar: function() {
+        this.labelActionBar.style.display = 'none';
     },
 
     updateActionBarPosition: function(target) {
@@ -267,6 +397,22 @@ var Notes = {
 
         this.actionBar.style.left = left + 'px';
         this.actionBar.style.top = top + 'px';
+    },
+
+    updateLabelActionBarPosition: function(target) {
+        var bound = target.getBoundingRect();
+        var canvasEl = Board.canvas.upperCanvasEl;
+        var rect = canvasEl.getBoundingClientRect();
+
+        var left = bound.left + bound.width / 2 - 70 + rect.left;
+        var top = bound.top + bound.height + 10 + rect.top;
+
+        if (left < 10) left = 10;
+        if (left + 140 > window.innerWidth) left = window.innerWidth - 150;
+        if (top + 50 > window.innerHeight) top = bound.top + rect.top - 50;
+
+        this.labelActionBar.style.left = left + 'px';
+        this.labelActionBar.style.top = top + 'px';
     },
 
     enterCrosshairMode: function() {
@@ -372,6 +518,10 @@ var Notes = {
                 bg = this.createStar(shapeSize, options.color);
                 bg.set('opacity', bgOpacity);
                 break;
+            case 'speech_bubble':
+                bg = this.createSpeechBubble(w, h, options.color);
+                bg.set('opacity', bgOpacity);
+                break;
             case 'banner':
                 bg = new fabric.Rect({
                     width: w * 1.2, height: h * 0.5,
@@ -397,6 +547,8 @@ var Notes = {
             textWidth = shapeSize * 1.1;
         } else if (options.shape === 'star') {
             textWidth = shapeSize * 0.85;
+        } else if (options.shape === 'speech_bubble') {
+            textWidth = w - 30;
         } else {
             textWidth = w - 20;
         }
@@ -459,6 +611,34 @@ var Notes = {
         });
     },
 
+    createSpeechBubble: function(w, h, color) {
+        var tailSize = h * 0.2;
+        var bodyH = h - tailSize;
+        var rx = 15;
+
+        var path = 'M ' + rx + ' 0'
+            + ' L ' + (w - rx) + ' 0'
+            + ' Q ' + w + ' 0 ' + w + ' ' + rx
+            + ' L ' + w + ' ' + (bodyH - rx)
+            + ' Q ' + w + ' ' + bodyH + ' ' + (w - rx) + ' ' + bodyH
+            + ' L ' + (w * 0.35) + ' ' + bodyH
+            + ' L ' + (w * 0.15) + ' ' + h
+            + ' L ' + (w * 0.25) + ' ' + bodyH
+            + ' L ' + rx + ' ' + bodyH
+            + ' Q 0 ' + bodyH + ' 0 ' + (bodyH - rx)
+            + ' L 0 ' + rx
+            + ' Q 0 0 ' + rx + ' 0'
+            + ' Z';
+
+        return new fabric.Path(path, {
+            fill: color,
+            stroke: 'rgba(0,0,0,0.1)',
+            strokeWidth: 1,
+            originX: 'center',
+            originY: 'center'
+        });
+    },
+
     enterEditMode: function(noteGroup) {
         if (!noteGroup || noteGroup.customType !== 'note') return;
 
@@ -479,8 +659,222 @@ var Notes = {
             shadow: new fabric.Shadow({ color: 'rgba(255,215,0,0.6)', blur: 20, offsetX: 0, offsetY: 0 })
         });
 
+        this.showOverlayTextarea(noteGroup);
         this.showEditToolbar();
         Board.canvas.renderAll();
+    },
+
+    showOverlayTextarea: function(noteGroup) {
+        if (this.overlayTextarea) {
+            this.overlayTextarea.remove();
+        }
+
+        var bound = noteGroup.getBoundingRect();
+        var canvasEl = Board.canvas.upperCanvasEl;
+        var canvasRect = canvasEl.getBoundingClientRect();
+
+        var left = bound.left + canvasRect.left + 10;
+        var top = bound.top + canvasRect.top + 10;
+        var width = bound.width - 20;
+        var height = bound.height - 20;
+
+        if (width < 60) width = 60;
+        if (height < 40) height = 40;
+
+        var data = noteGroup.noteData;
+
+        var ta = document.createElement('textarea');
+        ta.id = 'overlay-textarea';
+        ta.value = data.text;
+        ta.style.cssText = 'position:fixed;z-index:160;border:2px solid #FFD700;border-radius:8px;padding:8px;outline:none;resize:none;overflow:auto;'
+            + 'background:rgba(255,255,255,0.95);'
+            + 'font-family:' + data.fontFamily + ';'
+            + 'font-size:' + data.fontSize + 'px;'
+            + 'color:' + data.fontColor + ';'
+            + 'font-weight:' + (data.bold ? 'bold' : 'normal') + ';'
+            + 'font-style:' + (data.italic ? 'italic' : 'normal') + ';'
+            + 'text-align:' + (data.textAlign || 'left') + ';'
+            + 'left:' + left + 'px;'
+            + 'top:' + top + 'px;'
+            + 'width:' + width + 'px;'
+            + 'height:' + height + 'px;';
+
+        if (data.underline) ta.style.textDecoration = 'underline';
+        if (data.strikethrough) ta.style.textDecoration = (data.underline ? 'underline ' : '') + 'line-through';
+
+        ta.addEventListener('input', function() {
+            Notes.editingNote.noteData.text = ta.value;
+            Notes.applyNoteData();
+        });
+
+        document.body.appendChild(ta);
+        this.overlayTextarea = ta;
+        ta.focus();
+    },
+
+    updateOverlayTextareaStyle: function() {
+        if (!this.overlayTextarea || !this.editingNote) return;
+        var data = this.editingNote.noteData;
+        var ta = this.overlayTextarea;
+
+        ta.style.fontFamily = data.fontFamily;
+        ta.style.fontSize = data.fontSize + 'px';
+        ta.style.color = data.fontColor;
+        ta.style.fontWeight = data.bold ? 'bold' : 'normal';
+        ta.style.fontStyle = data.italic ? 'italic' : 'normal';
+        ta.style.textAlign = data.textAlign || 'left';
+
+        var decoration = '';
+        if (data.underline) decoration += 'underline ';
+        if (data.strikethrough) decoration += 'line-through';
+        ta.style.textDecoration = decoration || 'none';
+    },
+
+    removeOverlayTextarea: function() {
+        if (this.overlayTextarea) {
+            this.overlayTextarea.remove();
+            this.overlayTextarea = null;
+        }
+    },
+
+    enterLabelEditMode: function(label) {
+        if (!label) return;
+        this.editingLabel = label;
+        this.hideLabelActionBar();
+        this.showLabelEditToolbar(label);
+    },
+
+    exitLabelEditMode: function() {
+        this.editingLabel = null;
+        var toolbar = document.getElementById('label-edit-toolbar');
+        if (toolbar) toolbar.style.display = 'none';
+    },
+
+    showLabelEditToolbar: function(label) {
+        var toolbar = document.getElementById('label-edit-toolbar');
+        if (!toolbar) {
+            toolbar = document.createElement('div');
+            toolbar.id = 'label-edit-toolbar';
+
+            var isPhone = window.innerWidth <= 480;
+            toolbar.style.cssText = 'display:none;position:fixed;left:0;right:0;z-index:200;background:#162447;border:1px solid #2A2A4A;padding:8px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.4);';
+            if (isPhone) {
+                toolbar.style.bottom = '0';
+                toolbar.style.borderRadius = '16px 16px 0 0';
+            } else {
+                toolbar.style.top = '52px';
+            }
+
+            var btnStyle = 'width:32px;height:32px;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;display:inline-flex;align-items:center;justify-content:center;';
+            var selStyle = 'padding:4px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-size:0.8rem;font-family:Nunito,sans-serif;';
+            var lblStyle = 'color:#A0A0BC;font-size:0.7rem;';
+
+            toolbar.innerHTML = '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:space-between;width:100%;">'
+                + '<button id="label-edit-done" style="padding:6px 12px;background:#FFD700;color:#1B1B2F;border:none;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">Done</button>'
+                + '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">'
+                + '<label style="' + lblStyle + '">Color:</label>'
+                + '<input type="color" id="label-edit-color" value="#FFD700" style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;">'
+                + '<select id="label-edit-font" style="' + selStyle + '">'
+                + '<option value="Fredoka One">Fredoka One</option>'
+                + '<option value="Nunito">Nunito</option>'
+                + '<option value="Arial">Arial</option>'
+                + '<option value="Georgia">Georgia</option>'
+                + '<option value="Courier New">Courier New</option>'
+                + '<option value="Times New Roman">Times New Roman</option>'
+                + '</select>'
+                + '<select id="label-edit-size" style="' + selStyle + 'width:50px;">'
+                + '<option value="16">16</option><option value="20">20</option>'
+                + '<option value="24">24</option><option value="28">28</option>'
+                + '<option value="32">32</option><option value="36">36</option>'
+                + '<option value="42" selected>42</option><option value="48">48</option>'
+                + '<option value="56">56</option><option value="64">64</option>'
+                + '</select>'
+                + '<button id="label-edit-bold" class="label-fmt-btn" data-fmt="bold" style="' + btnStyle + 'font-weight:bold;">B</button>'
+                + '<button id="label-edit-italic" class="label-fmt-btn" data-fmt="italic" style="' + btnStyle + 'font-style:italic;">I</button>'
+                + '<button id="label-edit-underline" class="label-fmt-btn" data-fmt="underline" style="' + btnStyle + 'text-decoration:underline;">U</button>'
+                + '<button id="label-edit-strike" class="label-fmt-btn" data-fmt="strikethrough" style="' + btnStyle + 'text-decoration:line-through;">S</button>'
+                + '</div>'
+                + '</div>';
+
+            document.body.appendChild(toolbar);
+
+            document.getElementById('label-edit-done').addEventListener('click', function() {
+                Notes.exitLabelEditMode();
+            });
+
+            document.getElementById('label-edit-color').addEventListener('input', function() {
+                if (Notes.editingLabel) {
+                    Notes.editingLabel.set('fill', this.value);
+                    Board.canvas.renderAll();
+                }
+            });
+
+            document.getElementById('label-edit-font').addEventListener('change', function() {
+                if (Notes.editingLabel) {
+                    Notes.editingLabel.set('fontFamily', this.value);
+                    Board.canvas.renderAll();
+                }
+            });
+
+            document.getElementById('label-edit-size').addEventListener('change', function() {
+                if (Notes.editingLabel) {
+                    Notes.editingLabel.set('fontSize', parseInt(this.value));
+                    Board.canvas.renderAll();
+                }
+            });
+
+            var fmtBtns = document.querySelectorAll('.label-fmt-btn');
+            for (var i = 0; i < fmtBtns.length; i++) {
+                fmtBtns[i].addEventListener('click', function() {
+                    if (!Notes.editingLabel) return;
+                    var fmt = this.getAttribute('data-fmt');
+                    var label = Notes.editingLabel;
+                    switch (fmt) {
+                        case 'bold':
+                            label.set('fontWeight', label.fontWeight === 'bold' ? 'normal' : 'bold');
+                            break;
+                        case 'italic':
+                            label.set('fontStyle', label.fontStyle === 'italic' ? 'normal' : 'italic');
+                            break;
+                        case 'underline':
+                            label.set('underline', !label.underline);
+                            break;
+                        case 'strikethrough':
+                            label.set('linethrough', !label.linethrough);
+                            break;
+                    }
+                    Board.canvas.renderAll();
+                    Notes.updateLabelFormatButtons();
+                });
+            }
+        }
+
+        if (label) {
+            document.getElementById('label-edit-color').value = label.fill || '#FFD700';
+            document.getElementById('label-edit-font').value = label.fontFamily || 'Fredoka One';
+            document.getElementById('label-edit-size').value = String(label.fontSize || 42);
+            this.updateLabelFormatButtons();
+        }
+
+        toolbar.style.display = 'block';
+    },
+
+    updateLabelFormatButtons: function() {
+        if (!this.editingLabel) return;
+        var label = this.editingLabel;
+        var pairs = [
+            ['label-edit-bold', label.fontWeight === 'bold'],
+            ['label-edit-italic', label.fontStyle === 'italic'],
+            ['label-edit-underline', label.underline],
+            ['label-edit-strike', label.linethrough]
+        ];
+        for (var i = 0; i < pairs.length; i++) {
+            var el = document.getElementById(pairs[i][0]);
+            if (el) {
+                el.style.background = pairs[i][1] ? '#FFD700' : '#1F2A48';
+                el.style.color = pairs[i][1] ? '#1B1B2F' : '#E8E8F0';
+            }
+        }
     },
 
     showEditToolbar: function() {
@@ -539,16 +933,14 @@ var Notes = {
                 + '<option value="rounded_rectangle">Rounded</option>'
                 + '<option value="circle">Circle</option>'
                 + '<option value="star">Star</option>'
+                + '<option value="speech_bubble">Speech Bubble</option>'
                 + '<option value="banner">Banner</option>'
                 + '</select>'
                 + '<label style="' + lblStyle + '">BG:</label>'
                 + '<input type="range" id="edit-opacity" min="0" max="100" value="100" style="width:50px;cursor:pointer;">'
                 + '<span id="edit-opacity-val" style="color:#A0A0BC;font-size:0.7rem;width:28px;">100%</span>'
                 + '</div>'
-                + '<div style="display:flex;align-items:center;gap:4px;">'
-                + '<textarea id="edit-text-input" placeholder="Type your note..." style="width:200px;height:34px;padding:6px 10px;background:#1F2A48;border:1px solid #3A3A5A;border-radius:8px;color:#E8E8F0;font-size:0.85rem;font-family:Nunito,sans-serif;resize:none;outline:none;"></textarea>'
                 + '<button id="edit-save" style="padding:6px 12px;background:#FFD700;color:#1B1B2F;border:none;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">Save</button>'
-                + '</div>'
                 + '</div>';
 
             document.body.appendChild(toolbar);
@@ -556,10 +948,22 @@ var Notes = {
             document.getElementById('edit-discard').addEventListener('click', function() { Notes.discardEdit(); });
             document.getElementById('edit-save').addEventListener('click', function() { Notes.saveEdit(); });
             document.getElementById('edit-note-color').addEventListener('input', function() { Notes.updateNoteProperty('color', this.value); });
-            document.getElementById('edit-text-color').addEventListener('input', function() { Notes.updateNoteProperty('fontColor', this.value); });
-            document.getElementById('edit-font').addEventListener('change', function() { Notes.updateNoteProperty('fontFamily', this.value); });
-            document.getElementById('edit-size').addEventListener('change', function() { Notes.updateNoteProperty('fontSize', parseInt(this.value)); });
-            document.getElementById('edit-align').addEventListener('change', function() { Notes.updateNoteProperty('textAlign', this.value); });
+            document.getElementById('edit-text-color').addEventListener('input', function() {
+                Notes.updateNoteProperty('fontColor', this.value);
+                Notes.updateOverlayTextareaStyle();
+            });
+            document.getElementById('edit-font').addEventListener('change', function() {
+                Notes.updateNoteProperty('fontFamily', this.value);
+                Notes.updateOverlayTextareaStyle();
+            });
+            document.getElementById('edit-size').addEventListener('change', function() {
+                Notes.updateNoteProperty('fontSize', parseInt(this.value));
+                Notes.updateOverlayTextareaStyle();
+            });
+            document.getElementById('edit-align').addEventListener('change', function() {
+                Notes.updateNoteProperty('textAlign', this.value);
+                Notes.updateOverlayTextareaStyle();
+            });
             document.getElementById('edit-shape').addEventListener('change', function() { Notes.changeShape(this.value); });
 
             document.getElementById('edit-opacity').addEventListener('input', function() {
@@ -577,16 +981,13 @@ var Notes = {
                 }
             });
 
-            var fmtBtns = document.querySelectorAll('.fmt-btn');
+            var fmtBtns = toolbar.querySelectorAll('.fmt-btn');
             for (var i = 0; i < fmtBtns.length; i++) {
                 fmtBtns[i].addEventListener('click', function() {
                     Notes.toggleFormat(this.getAttribute('data-fmt'));
+                    Notes.updateOverlayTextareaStyle();
                 });
             }
-
-            document.getElementById('edit-text-input').addEventListener('input', function() {
-                Notes.updateNoteProperty('text', this.value);
-            });
         }
 
         if (this.editingNote) {
@@ -597,14 +998,12 @@ var Notes = {
             document.getElementById('edit-size').value = String(data.fontSize);
             document.getElementById('edit-align').value = data.textAlign || 'left';
             document.getElementById('edit-shape').value = data.shape;
-            document.getElementById('edit-text-input').value = data.text;
             document.getElementById('edit-opacity').value = Math.round((data.opacity !== undefined ? data.opacity : 1) * 100);
             document.getElementById('edit-opacity-val').textContent = Math.round((data.opacity !== undefined ? data.opacity : 1) * 100) + '%';
             this.updateFormatButtons();
         }
 
         toolbar.style.display = 'block';
-        document.getElementById('edit-text-input').focus();
     },
 
     updateFormatButtons: function() {
@@ -675,6 +1074,7 @@ var Notes = {
         Board.canvas.renderAll();
 
         this.editingNote = newNote;
+        this.showOverlayTextarea(newNote);
     },
 
     applyNoteData: function() {
@@ -713,7 +1113,12 @@ var Notes = {
 
     saveEdit: function() {
         if (!this.editingNote) return;
+        if (this.overlayTextarea) {
+            this.editingNote.noteData.text = this.overlayTextarea.value;
+            this.applyNoteData();
+        }
         delete this.editingNote._savedData;
+        this.removeOverlayTextarea();
         this.exitEditMode();
         App.showToast('Note saved!', { duration: 1500 });
     },
@@ -721,14 +1126,30 @@ var Notes = {
     discardEdit: function() {
         if (!this.editingNote) return;
 
+        var hasChanges = false;
         if (this.editingNote._savedData) {
-            this.editingNote.noteData = JSON.parse(JSON.stringify(this.editingNote._savedData));
-            this.applyNoteData();
-            delete this.editingNote._savedData;
+            var current = JSON.stringify(this.editingNote.noteData);
+            var saved = JSON.stringify(this.editingNote._savedData);
+            if (current !== saved) hasChanges = true;
+            if (this.overlayTextarea && this.overlayTextarea.value !== this.editingNote._savedData.text) hasChanges = true;
         }
 
-        this.exitEditMode();
-        App.showToast('Changes discarded', { duration: 1500 });
+        if (hasChanges) {
+            App.showConfirm('Discard all changes to this note?', function() {
+                if (Notes.editingNote && Notes.editingNote._savedData) {
+                    Notes.editingNote.noteData = JSON.parse(JSON.stringify(Notes.editingNote._savedData));
+                    Notes.applyNoteData();
+                    delete Notes.editingNote._savedData;
+                }
+                Notes.removeOverlayTextarea();
+                Notes.exitEditMode();
+                App.showToast('Changes discarded', { duration: 1500 });
+            });
+        } else {
+            delete this.editingNote._savedData;
+            this.removeOverlayTextarea();
+            this.exitEditMode();
+        }
     },
 
     exitEditMode: function() {
@@ -739,6 +1160,7 @@ var Notes = {
         });
 
         this.editingNote = null;
+        this.removeOverlayTextarea();
 
         var overlay = document.getElementById('edit-overlay');
         if (overlay) overlay.style.display = 'none';
