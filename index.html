@@ -13,6 +13,9 @@
 </head>
 <body>
 
+    <!-- ============================================ -->
+    <!-- LOGIN SCREEN -->
+    <!-- ============================================ -->
     <div id="login-screen" class="screen active">
         <div class="login-container">
             <h1 class="app-title">TaDa List</h1>
@@ -71,6 +74,9 @@
         </div>
     </div>
 
+    <!-- ============================================ -->
+    <!-- LOCK SCREEN -->
+    <!-- ============================================ -->
     <div id="lock-screen" class="screen">
         <div class="login-container">
             <h1 class="app-title">TaDa List</h1>
@@ -90,6 +96,9 @@
         </div>
     </div>
 
+    <!-- ============================================ -->
+    <!-- LOADING SCREEN -->
+    <!-- ============================================ -->
     <div id="loading-screen" class="screen">
         <div class="loading-container">
             <h1 class="app-title">TaDa List</h1>
@@ -97,7 +106,12 @@
         </div>
     </div>
 
+    <!-- ============================================ -->
+    <!-- MAIN APP SCREEN -->
+    <!-- ============================================ -->
     <div id="app-screen" class="screen">
+
+        <!-- Top Bar -->
         <header id="top-bar">
             <div class="top-bar-left">
                 <button id="board-name-btn" class="board-name" title="Click to switch boards">
@@ -114,31 +128,551 @@
                 <button id="overflow-btn" class="icon-btn overflow-btn" title="More" style="display:none;">&#8943;</button>
             </div>
         </header>
+
+        <!-- Connection Bar -->
         <div id="connection-bar" class="connection-bar" style="display:none;">
             Having trouble connecting, trying again...
         </div>
+
+        <!-- Canvas -->
         <main id="canvas-container">
             <canvas id="board-canvas"></canvas>
         </main>
+
+        <!-- Floating Buttons -->
         <button id="add-note-btn" class="floating-btn floating-btn-right" title="Add a sticky note">&#128211;</button>
+        <button id="add-label-btn" class="floating-btn floating-btn-left-label" title="Add a label">&#127991;&#65039;</button>
+
+        <!-- Zoom Controls (Bottom Left) -->
         <div id="zoom-controls" class="zoom-widget">
             <button id="zoom-out-btn" class="zoom-btn" title="Zoom out">-</button>
             <button id="zoom-level" class="zoom-level" title="Click to reset to 100%">100%</button>
             <button id="zoom-in-btn" class="zoom-btn" title="Zoom in">+</button>
         </div>
+
+        <!-- Undo/Redo (Bottom Center) -->
         <div id="undo-redo" class="undo-redo-widget">
             <button id="undo-btn" class="undo-redo-btn" title="Undo" disabled>&#8617;&#65039;</button>
             <button id="redo-btn" class="undo-redo-btn" title="Redo" disabled>&#8618;&#65039;</button>
         </div>
+
+        <!-- Sync Button -->
         <button id="sync-btn" class="sync-btn" title="Sync now">&#128260;</button>
     </div>
 
+    <!-- ============================================ -->
+    <!-- THEME PANEL (Slide-Out) -->
+    <!-- ============================================ -->
+    <div id="theme-panel-overlay" class="panel-overlay"></div>
+    <div id="theme-panel" class="slide-panel">
+        <div class="panel-header">
+            <h2>&#127912; Theme &amp; Background</h2>
+            <button class="panel-close" id="theme-panel-close">&#10005;</button>
+        </div>
+        <div class="panel-content">
+
+            <!-- Background Color -->
+            <div class="panel-section">
+                <h3 class="panel-section-title">Background Color</h3>
+                <div class="panel-color-row">
+                    <input type="color" id="theme-bg-color" value="#2a2a4a" class="panel-color-input">
+                    <span id="theme-bg-color-hex" class="panel-color-hex">#2a2a4a</span>
+                    <button id="theme-bg-color-apply" class="btn-small">Apply</button>
+                </div>
+            </div>
+
+            <!-- Background Image -->
+            <div class="panel-section">
+                <h3 class="panel-section-title">Background Image</h3>
+                <div class="panel-upload-area">
+                    <label for="theme-bg-image-upload" class="panel-upload-label">
+                        Choose an image...
+                    </label>
+                    <input type="file" id="theme-bg-image-upload" accept="image/*" style="display:none;">
+                </div>
+                <div class="panel-radio-row" style="margin-top:8px;">
+                    <label class="panel-radio">
+                        <input type="radio" name="bg-image-mode" value="stretch" checked> Stretch
+                    </label>
+                    <label class="panel-radio">
+                        <input type="radio" name="bg-image-mode" value="tile"> Tile
+                    </label>
+                </div>
+                <button id="theme-bg-image-remove" class="btn-small btn-muted" style="margin-top:8px;">Remove Background Image</button>
+            </div>
+
+            <!-- Pre-Built Themes -->
+            <div class="panel-section">
+                <h3 class="panel-section-title">Pre-Built Themes</h3>
+                <div id="theme-prebuilt-list" class="panel-theme-grid">
+                    <button class="theme-card" data-theme="whiteboard">
+                        <span class="theme-card-icon">&#9728;&#65039;</span>
+                        <span class="theme-card-name">Whiteboard</span>
+                    </button>
+                    <button class="theme-card" data-theme="chalkboard">
+                        <span class="theme-card-icon">&#127761;</span>
+                        <span class="theme-card-name">Chalkboard</span>
+                    </button>
+                    <button class="theme-card" data-theme="corkboard">
+                        <span class="theme-card-icon">&#127807;</span>
+                        <span class="theme-card-name">Cork Board</span>
+                    </button>
+                </div>
+                <p class="panel-hint">Theme visuals will be designed after the app is built. These are placeholders.</p>
+            </div>
+
+            <!-- My Themes -->
+            <div class="panel-section">
+                <h3 class="panel-section-title">My Themes</h3>
+                <div id="theme-my-list" class="panel-theme-grid">
+                    <p class="panel-empty-msg">No custom themes yet. Decorate a board and save it as a theme from Settings.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SEARCH PANEL (Slide-Out) -->
+    <!-- ============================================ -->
+    <div id="search-panel-overlay" class="panel-overlay"></div>
+    <div id="search-panel" class="slide-panel">
+        <div class="panel-header">
+            <h2>&#128269; Search &amp; Filter</h2>
+            <button class="panel-close" id="search-panel-close">&#10005;</button>
+        </div>
+        <div class="panel-content">
+
+            <!-- Text Search -->
+            <div class="panel-section">
+                <input type="text" id="search-text-input" class="panel-text-input" placeholder="Search notes and boards...">
+            </div>
+
+            <!-- Filter: By Color -->
+            <div class="panel-section">
+                <h3 class="panel-section-title">Filter by Color</h3>
+                <div id="search-color-filter" class="panel-color-grid">
+                    <button class="color-swatch" data-color="#FFEB3B" style="background:#FFEB3B;" title="Yellow"></button>
+                    <button class="color-swatch" data-color="#FF6B6B" style="background:#FF6B6B;" title="Red"></button>
+                    <button class="color-swatch" data-color="#4ECDC4" style="background:#4ECDC4;" title="Teal"></button>
+                    <button class="color-swatch" data-color="#45B7D1" style="background:#45B7D1;" title="Blue"></button>
+                    <button class="color-swatch" data-color="#96CEB4" style="background:#96CEB4;" title="Green"></button>
+                    <button class="color-swatch" data-color="#DDA0DD" style="background:#DDA0DD;" title="Purple"></button>
+                    <button class="color-swatch" data-color="#FFB347" style="background:#FFB347;" title="Orange"></button>
+                    <button class="color-swatch" data-color="#FFFFFF" style="background:#FFFFFF;border:1px solid #3A3A5A;" title="White"></button>
+                </div>
+                <button id="search-color-clear" class="btn-small btn-muted" style="margin-top:6px;">Clear color filter</button>
+            </div>
+
+            <!-- Filter: By Board -->
+            <div class="panel-section">
+                <h3 class="panel-section-title">Filter by Board</h3>
+                <select id="search-board-filter" class="panel-select">
+                    <option value="all">All Boards</option>
+                </select>
+            </div>
+
+            <!-- Filter: By Date -->
+            <div class="panel-section">
+                <h3 class="panel-section-title">Filter by Date Range</h3>
+                <div class="panel-date-row">
+                    <label class="panel-date-label">From:</label>
+                    <input type="date" id="search-date-from" class="panel-date-input">
+                </div>
+                <div class="panel-date-row">
+                    <label class="panel-date-label">To:</label>
+                    <input type="date" id="search-date-to" class="panel-date-input">
+                </div>
+            </div>
+
+            <!-- Filter: Archived vs Active -->
+            <div class="panel-section">
+                <h3 class="panel-section-title">Status</h3>
+                <select id="search-status-filter" class="panel-select">
+                    <option value="both">Active &amp; Archived</option>
+                    <option value="active" selected>Active Only</option>
+                    <option value="archived">Archived Only</option>
+                </select>
+            </div>
+
+            <!-- Search Button & Results -->
+            <div class="panel-section">
+                <button id="search-go-btn" class="btn-primary" style="width:100%;">Search</button>
+            </div>
+            <div class="panel-section">
+                <h3 class="panel-section-title">Results</h3>
+                <div id="search-results" class="search-results-list">
+                    <p class="panel-empty-msg">Use the search field or filters above, then tap Search.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SETTINGS PANEL (Slide-Out, Two-Level) -->
+    <!-- ============================================ -->
+    <div id="settings-panel-overlay" class="panel-overlay"></div>
+    <div id="settings-panel" class="slide-panel">
+
+        <!-- Level 1: Main Menu -->
+        <div id="settings-main" class="settings-level">
+            <div class="panel-header">
+                <h2>&#9881;&#65039; Settings</h2>
+                <button class="panel-close" id="settings-panel-close">&#10005;</button>
+            </div>
+            <div class="panel-content">
+                <nav class="settings-nav">
+                    <button class="settings-nav-item" data-section="about">
+                        <span class="settings-nav-icon">&#8505;&#65039;</span>
+                        <span class="settings-nav-label">About</span>
+                    </button>
+                    <button class="settings-nav-item" data-section="archive">
+                        <span class="settings-nav-icon">&#128230;</span>
+                        <span class="settings-nav-label">Archive</span>
+                    </button>
+                    <button class="settings-nav-item" data-section="backup">
+                        <span class="settings-nav-icon">&#128190;</span>
+                        <span class="settings-nav-label">Backup</span>
+                    </button>
+                    <button class="settings-nav-item" data-section="boards">
+                        <span class="settings-nav-icon">&#128203;</span>
+                        <span class="settings-nav-label">Boards</span>
+                    </button>
+                    <button class="settings-nav-item" data-section="credits">
+                        <span class="settings-nav-icon">&#128221;</span>
+                        <span class="settings-nav-label">Credits &amp; Licenses</span>
+                    </button>
+                    <button class="settings-nav-item" data-section="decorations">
+                        <span class="settings-nav-icon">&#127912;</span>
+                        <span class="settings-nav-label">Decorations</span>
+                    </button>
+                    <button class="settings-nav-item" data-section="export">
+                        <span class="settings-nav-icon">&#128228;</span>
+                        <span class="settings-nav-label">Export</span>
+                    </button>
+                    <button class="settings-nav-item" data-section="fonts">
+                        <span class="settings-nav-icon">&#128292;</span>
+                        <span class="settings-nav-label">Fonts &amp; Themes</span>
+                    </button>
+                    <button class="settings-nav-item" data-section="import">
+                        <span class="settings-nav-icon">&#128229;</span>
+                        <span class="settings-nav-label">Import List</span>
+                    </button>
+                    <button class="settings-nav-item" data-section="manage-users">
+                        <span class="settings-nav-icon">&#128101;</span>
+                        <span class="settings-nav-label">Manage Users</span>
+                    </button>
+                    <button class="settings-nav-item" data-section="security">
+                        <span class="settings-nav-icon">&#128274;</span>
+                        <span class="settings-nav-label">Security</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Level 2: Section Content -->
+
+        <!-- About -->
+        <div id="settings-about" class="settings-level settings-sub" style="display:none;">
+            <div class="panel-header">
+                <button class="settings-back-btn" data-back="main">&#8592; Back</button>
+                <h2>&#8505;&#65039; About</h2>
+                <span></span>
+            </div>
+            <div class="panel-content">
+                <p class="settings-info-label">Version</p>
+                <p class="settings-info-value">1.0.0</p>
+                <p class="settings-info-label">Summary</p>
+                <p class="settings-info-value">TaDa List — Your personal productivity board. A multi-user bulletin board with To Do and Ta Da sides.</p>
+                <p class="settings-info-label">Created by</p>
+                <p class="settings-info-value">Suzi Reynolds</p>
+                <p class="settings-info-label">Copyright</p>
+                <p class="settings-info-value">&copy; 2026 ReynoldsFun</p>
+                <p class="settings-info-label" style="margin-top:16px;">Tagline</p>
+                <input type="text" id="settings-tagline" class="panel-text-input" value="Your personal productivity board" placeholder="Edit tagline...">
+                <button id="settings-tagline-save" class="btn-small" style="margin-top:6px;">Save Tagline</button>
+            </div>
+        </div>
+
+        <!-- Archive -->
+        <div id="settings-archive" class="settings-level settings-sub" style="display:none;">
+            <div class="panel-header">
+                <button class="settings-back-btn" data-back="main">&#8592; Back</button>
+                <h2>&#128230; Archive</h2>
+                <span></span>
+            </div>
+            <div class="panel-content">
+                <div id="archive-list" class="archive-list">
+                    <p class="panel-empty-msg">No archived notes yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backup -->
+        <div id="settings-backup" class="settings-level settings-sub" style="display:none;">
+            <div class="panel-header">
+                <button class="settings-back-btn" data-back="main">&#8592; Back</button>
+                <h2>&#128190; Backup</h2>
+                <span></span>
+            </div>
+            <div class="panel-content">
+                <button id="backup-download-btn" class="btn-primary" style="width:100%;">Download Backup</button>
+                <p class="panel-hint" style="margin-top:8px;">Downloads a complete snapshot of all your boards and notes.</p>
+                <div class="panel-section" style="margin-top:20px;">
+                    <h3 class="panel-section-title">Restore from Backup</h3>
+                    <label for="backup-restore-upload" class="panel-upload-label">
+                        Choose backup file...
+                    </label>
+                    <input type="file" id="backup-restore-upload" accept=".json" style="display:none;">
+                    <p class="panel-hint" style="margin-top:6px;color:#FF4757;">Warning: Restoring replaces ALL current data.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boards -->
+        <div id="settings-boards" class="settings-level settings-sub" style="display:none;">
+            <div class="panel-header">
+                <button class="settings-back-btn" data-back="main">&#8592; Back</button>
+                <h2>&#128203; Boards</h2>
+                <span></span>
+            </div>
+            <div class="panel-content">
+                <div id="settings-board-list" class="settings-board-list">
+                    <!-- Populated by JS -->
+                </div>
+                <button id="settings-add-board-btn" class="btn-primary" style="width:100%;margin-top:12px;">+ Add New Board</button>
+            </div>
+        </div>
+
+        <!-- Credits & Licenses -->
+        <div id="settings-credits" class="settings-level settings-sub" style="display:none;">
+            <div class="panel-header">
+                <button class="settings-back-btn" data-back="main">&#8592; Back</button>
+                <h2>&#128221; Credits &amp; Licenses</h2>
+                <span></span>
+            </div>
+            <div class="panel-content">
+                <p class="settings-info-value">Built by Claude</p>
+                <p class="settings-info-value">Fabric.js — MIT License</p>
+                <p class="settings-info-value">Google Fonts — SIL Open Font License</p>
+                <p class="settings-info-value">Open Dyslexic — SIL Open Font License</p>
+                <p class="settings-info-value">Lexend — SIL Open Font License</p>
+                <p class="settings-info-value">Supabase</p>
+            </div>
+        </div>
+
+        <!-- Decorations -->
+        <div id="settings-decorations" class="settings-level settings-sub" style="display:none;">
+            <div class="panel-header">
+                <button class="settings-back-btn" data-back="main">&#8592; Back</button>
+                <h2>&#127912; Decorations</h2>
+                <span></span>
+            </div>
+            <div class="panel-content">
+                <h3 class="panel-section-title">My Stickers</h3>
+                <div id="settings-stickers-list" class="settings-stickers-grid">
+                    <p class="panel-empty-msg">No saved stickers yet. Right-click a note and choose "Save as Sticker" to create one.</p>
+                </div>
+                <h3 class="panel-section-title" style="margin-top:16px;">Upload SVG Decorations</h3>
+                <label for="decoration-svg-upload" class="panel-upload-label">
+                    Choose SVG file...
+                </label>
+                <input type="file" id="decoration-svg-upload" accept=".svg" style="display:none;">
+                <h3 class="panel-section-title" style="margin-top:16px;">Upload Custom Background</h3>
+                <label for="decoration-bg-upload" class="panel-upload-label">
+                    Choose background image...
+                </label>
+                <input type="file" id="decoration-bg-upload" accept="image/*" style="display:none;">
+            </div>
+        </div>
+
+        <!-- Export -->
+        <div id="settings-export" class="settings-level settings-sub" style="display:none;">
+            <div class="panel-header">
+                <button class="settings-back-btn" data-back="main">&#8592; Back</button>
+                <h2>&#128228; Export</h2>
+                <span></span>
+            </div>
+            <div class="panel-content">
+                <h3 class="panel-section-title">Format</h3>
+                <div class="panel-radio-row">
+                    <label class="panel-radio">
+                        <input type="radio" name="export-format" value="png" checked> PNG (Image)
+                    </label>
+                    <label class="panel-radio">
+                        <input type="radio" name="export-format" value="txt"> TXT (Text)
+                    </label>
+                </div>
+                <h3 class="panel-section-title" style="margin-top:12px;">Scope</h3>
+                <div class="panel-radio-row">
+                    <label class="panel-radio">
+                        <input type="radio" name="export-scope" value="full" checked> Full Board
+                    </label>
+                    <label class="panel-radio">
+                        <input type="radio" name="export-scope" value="view"> Current View
+                    </label>
+                </div>
+                <button id="export-download-btn" class="btn-primary" style="width:100%;margin-top:16px;">Export &amp; Download</button>
+                <button id="export-print-btn" class="btn-small btn-muted" style="width:100%;margin-top:8px;">Print (Desktop Only)</button>
+            </div>
+        </div>
+
+        <!-- Fonts & Themes -->
+        <div id="settings-fonts" class="settings-level settings-sub" style="display:none;">
+            <div class="panel-header">
+                <button class="settings-back-btn" data-back="main">&#8592; Back</button>
+                <h2>&#128292; Fonts &amp; Themes</h2>
+                <span></span>
+            </div>
+            <div class="panel-content">
+                <h3 class="panel-section-title">Available Fonts</h3>
+                <div id="settings-font-list" class="settings-font-list">
+                    <p class="panel-empty-msg">Font list will be loaded here.</p>
+                </div>
+                <h3 class="panel-section-title" style="margin-top:16px;">Upload Custom Font</h3>
+                <label for="font-upload" class="panel-upload-label">
+                    Choose .ttf or .otf file...
+                </label>
+                <input type="file" id="font-upload" accept=".ttf,.otf" style="display:none;">
+                <h3 class="panel-section-title" style="margin-top:16px;">Theme Management</h3>
+                <button id="settings-save-theme-btn" class="btn-primary" style="width:100%;">Save Current Board as Theme</button>
+                <button id="settings-share-theme-btn" class="btn-small btn-muted" style="width:100%;margin-top:8px;">Request to Share Theme</button>
+            </div>
+        </div>
+
+        <!-- Import List -->
+        <div id="settings-import" class="settings-level settings-sub" style="display:none;">
+            <div class="panel-header">
+                <button class="settings-back-btn" data-back="main">&#8592; Back</button>
+                <h2>&#128229; Import List</h2>
+                <span></span>
+            </div>
+            <div class="panel-content">
+                <p class="panel-hint">Paste a plain text list below. Each line becomes a sticky note (max 15).</p>
+                <textarea id="import-list-text" class="panel-textarea" rows="8" placeholder="Item 1&#10;Item 2&#10;Item 3&#10;..."></textarea>
+                <h3 class="panel-section-title" style="margin-top:12px;">Style for Imported Notes</h3>
+                <div class="panel-color-row">
+                    <label class="panel-date-label">Color:</label>
+                    <input type="color" id="import-note-color" value="#FFEB3B" class="panel-color-input">
+                </div>
+                <div class="panel-color-row" style="margin-top:6px;">
+                    <label class="panel-date-label">Shape:</label>
+                    <select id="import-note-shape" class="panel-select" style="flex:1;">
+                        <option value="rectangle">Rectangle</option>
+                        <option value="rounded_rectangle">Rounded</option>
+                        <option value="circle">Circle</option>
+                        <option value="star">Star</option>
+                        <option value="speech_bubble">Speech Bubble</option>
+                        <option value="banner">Banner</option>
+                    </select>
+                </div>
+                <button id="import-list-btn" class="btn-primary" style="width:100%;margin-top:16px;">Import Notes</button>
+            </div>
+        </div>
+
+        <!-- Manage Users (Admin Only) -->
+        <div id="settings-manage-users" class="settings-level settings-sub" style="display:none;">
+            <div class="panel-header">
+                <button class="settings-back-btn" data-back="main">&#8592; Back</button>
+                <h2>&#128101; Manage Users</h2>
+                <span></span>
+            </div>
+            <div class="panel-content">
+                <p class="panel-hint">Admin-only. Manage users, storage, and invitations.</p>
+                <div id="manage-users-list" class="manage-users-list">
+                    <p class="panel-empty-msg">User list will be loaded here.</p>
+                </div>
+                <h3 class="panel-section-title" style="margin-top:16px;">Invite New User</h3>
+                <div class="panel-color-row">
+                    <input type="email" id="invite-email-input" class="panel-text-input" placeholder="user@example.com" style="flex:1;">
+                    <button id="invite-send-btn" class="btn-small">Send Invite</button>
+                </div>
+                <h3 class="panel-section-title" style="margin-top:16px;">Storage Overview</h3>
+                <p id="manage-storage-total" class="settings-info-value">Total: — / 500MB</p>
+            </div>
+        </div>
+
+        <!-- Security -->
+        <div id="settings-security" class="settings-level settings-sub" style="display:none;">
+            <div class="panel-header">
+                <button class="settings-back-btn" data-back="main">&#8592; Back</button>
+                <h2>&#128274; Security</h2>
+                <span></span>
+            </div>
+            <div class="panel-content">
+                <h3 class="panel-section-title">Change Password</h3>
+                <div class="form-group">
+                    <input type="password" id="security-new-password" class="panel-text-input" placeholder="New password (min 6 characters)">
+                </div>
+                <button id="security-change-pw-btn" class="btn-small" style="margin-top:6px;">Update Password</button>
+
+                <h3 class="panel-section-title" style="margin-top:20px;">Auto-Lock Timeout</h3>
+                <select id="security-timeout" class="panel-select">
+                    <option value="5">5 minutes</option>
+                    <option value="10">10 minutes</option>
+                    <option value="15" selected>15 minutes</option>
+                    <option value="30">30 minutes</option>
+                    <option value="60">1 hour</option>
+                    <option value="never">Never</option>
+                </select>
+
+                <h3 class="panel-section-title" style="margin-top:20px;">Session</h3>
+                <button id="security-logout-btn" class="btn-danger-outline" style="width:100%;">Log Out Completely</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!-- CONTEXT MENU (Right-click / Long-press) -->
+    <!-- ============================================ -->
+    <div id="context-menu" class="context-menu" style="display:none;">
+        <!-- Empty Board -->
+        <div id="ctx-empty" class="ctx-group" style="display:none;">
+            <button class="ctx-item" data-action="ctx-add-note">&#128211; Add note here</button>
+            <button class="ctx-item" data-action="ctx-add-decoration">&#127912; Add decoration here</button>
+            <button class="ctx-item" data-action="ctx-add-label">&#127991;&#65039; Add label here</button>
+            <button class="ctx-item" data-action="ctx-paste">&#128203; Paste</button>
+        </div>
+        <!-- Single Element -->
+        <div id="ctx-element" class="ctx-group" style="display:none;">
+            <button class="ctx-item" data-action="ctx-delete">&#128465;&#65039; Delete</button>
+            <button class="ctx-item" data-action="ctx-duplicate">&#128203; Duplicate</button>
+            <button class="ctx-item" data-action="ctx-lock">&#128274; Lock / Unlock</button>
+            <button class="ctx-item" data-action="ctx-save-sticker">&#11088; Save as Sticker</button>
+            <button class="ctx-item ctx-moveto-trigger" data-action="ctx-move-to">&#128230; Move to... &#9654;</button>
+        </div>
+        <!-- Multi-Select -->
+        <div id="ctx-multi" class="ctx-group" style="display:none;">
+            <button class="ctx-item ctx-moveto-trigger" data-action="ctx-move-to">&#128230; Move to... &#9654;</button>
+            <button class="ctx-item" data-action="ctx-change-color">&#127912; Change color</button>
+            <button class="ctx-item" data-action="ctx-lock-all">&#128274; Lock / Unlock all</button>
+            <button class="ctx-item" data-action="ctx-copy">&#128203; Copy</button>
+            <button class="ctx-item" data-action="ctx-cut">&#9986;&#65039; Cut</button>
+            <button class="ctx-item" data-action="ctx-delete-all">&#128465;&#65039; Delete all</button>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- MOVE-TO SUB-MENU -->
+    <!-- ============================================ -->
+    <div id="moveto-menu" class="context-menu" style="display:none;">
+        <!-- Populated dynamically by JS with list of boards -->
+    </div>
+
+    <!-- ============================================ -->
+    <!-- TOAST NOTIFICATION -->
+    <!-- ============================================ -->
     <div id="toast" class="toast" style="display:none;">
         <span id="toast-message"></span>
         <button id="toast-undo-btn" class="toast-undo" style="display:none;">Undo</button>
         <button id="toast-close-btn" class="toast-close">&#10005;</button>
     </div>
 
+    <!-- ============================================ -->
+    <!-- CONFIRMATION POPUP -->
+    <!-- ============================================ -->
     <div id="confirm-popup" class="popup-overlay" style="display:none;">
         <div class="popup-box">
             <p id="confirm-message"></p>
@@ -149,6 +683,9 @@
         </div>
     </div>
 
+    <!-- ============================================ -->
+    <!-- SCRIPTS -->
+    <!-- ============================================ -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <script src="js/auth.js"></script>
@@ -156,6 +693,7 @@
     <script src="js/board.js"></script>
     <script src="js/notes.js"></script>
     <script>
+        /* ---- Password toggle helpers ---- */
         function setupToggle(btnId, inputId) {
             document.getElementById(btnId).addEventListener('click', function() {
                 var input = document.getElementById(inputId);
@@ -167,6 +705,7 @@
         setupToggle('toggle-signup-pw', 'signup-password');
         setupToggle('toggle-lock-pw', 'lock-password');
 
+        /* ---- Auth button handlers ---- */
         document.getElementById('login-btn').addEventListener('click', function() { Auth.login(); });
         document.getElementById('signup-btn').addEventListener('click', function() { Auth.signUp(); });
         document.getElementById('forgot-btn').addEventListener('click', function() { Auth.sendPasswordReset(); });
@@ -176,15 +715,394 @@
         document.getElementById('show-forgot-link').addEventListener('click', function(e) { e.preventDefault(); Auth.forgotPassword(); });
         document.getElementById('show-login-link').addEventListener('click', function(e) { e.preventDefault(); Auth.showLogin(); });
         document.getElementById('show-login-link-2').addEventListener('click', function(e) { e.preventDefault(); Auth.showLogin(); });
+
+        /* ---- Toast & Confirm handlers ---- */
         document.getElementById('toast-close-btn').addEventListener('click', function() { App.hideToast(); });
         document.getElementById('toast-undo-btn').addEventListener('click', function() { App.undoToast(); });
         document.getElementById('confirm-cancel').addEventListener('click', function() { App.cancelConfirm(); });
         document.getElementById('confirm-ok').addEventListener('click', function() { App.okConfirm(); });
 
+        /* ---- Enter key handlers ---- */
         document.getElementById('login-password').addEventListener('keydown', function(e) { if (e.key === 'Enter') Auth.login(); });
         document.getElementById('login-email').addEventListener('keydown', function(e) { if (e.key === 'Enter') Auth.login(); });
         document.getElementById('lock-password').addEventListener('keydown', function(e) { if (e.key === 'Enter') Auth.unlock(); });
 
+        /* ---- Label floating button ---- */
+        document.getElementById('add-label-btn').addEventListener('click', function() {
+            if (Board.labelCrosshairMode) {
+                Board.exitLabelCrosshairMode();
+            } else {
+                Board.enterLabelCrosshairMode();
+            }
+        });
+
+        /* ---- Panel open/close helpers ---- */
+        function openPanel(panelId, overlayId) {
+            document.getElementById(panelId).classList.add('open');
+            document.getElementById(overlayId).classList.add('open');
+        }
+        function closePanel(panelId, overlayId) {
+            document.getElementById(panelId).classList.remove('open');
+            document.getElementById(overlayId).classList.remove('open');
+        }
+
+        /* ---- Theme panel ---- */
+        document.getElementById('theme-btn').addEventListener('click', function() {
+            openPanel('theme-panel', 'theme-panel-overlay');
+        });
+        document.getElementById('theme-panel-close').addEventListener('click', function() {
+            closePanel('theme-panel', 'theme-panel-overlay');
+        });
+        document.getElementById('theme-panel-overlay').addEventListener('click', function() {
+            closePanel('theme-panel', 'theme-panel-overlay');
+        });
+
+        /* Theme panel: background color */
+        document.getElementById('theme-bg-color').addEventListener('input', function() {
+            document.getElementById('theme-bg-color-hex').textContent = this.value;
+        });
+        document.getElementById('theme-bg-color-apply').addEventListener('click', function() {
+            var color = document.getElementById('theme-bg-color').value;
+            Board.setBackgroundColor(color);
+            Board.removeBackgroundImage();
+            App.showToast('Background color applied!', { duration: 1500 });
+        });
+
+        /* Theme panel: background image upload */
+        document.getElementById('theme-bg-image-upload').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                App.showToast('Image must be under 2MB.', { duration: 2000 });
+                return;
+            }
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                var mode = document.querySelector('input[name="bg-image-mode"]:checked').value;
+                Board.setBackgroundImage(ev.target.result, mode);
+                App.showToast('Background image applied!', { duration: 1500 });
+            };
+            reader.readAsDataURL(file);
+        });
+        document.getElementById('theme-bg-image-remove').addEventListener('click', function() {
+            Board.removeBackgroundImage();
+            App.showToast('Background image removed.', { duration: 1500 });
+        });
+
+        /* Theme panel: pre-built theme placeholders */
+        var themeCards = document.querySelectorAll('.theme-card');
+        for (var tc = 0; tc < themeCards.length; tc++) {
+            themeCards[tc].addEventListener('click', function() {
+                var theme = this.getAttribute('data-theme');
+                App.showToast('Theme "' + theme + '" selected. (Visuals coming soon!)', { duration: 2000 });
+            });
+        }
+
+        /* ---- Search panel ---- */
+        document.getElementById('search-btn').addEventListener('click', function() {
+            openPanel('search-panel', 'search-panel-overlay');
+        });
+        document.getElementById('search-panel-close').addEventListener('click', function() {
+            closePanel('search-panel', 'search-panel-overlay');
+        });
+        document.getElementById('search-panel-overlay').addEventListener('click', function() {
+            closePanel('search-panel', 'search-panel-overlay');
+        });
+
+        /* Search: Enter key triggers search */
+        document.getElementById('search-text-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('search-go-btn').click();
+            }
+        });
+
+        /* Search: Go button placeholder */
+        document.getElementById('search-go-btn').addEventListener('click', function() {
+            App.showToast('Search functionality will be wired up in a future phase.', { duration: 2000 });
+        });
+
+        /* Search: color swatch selection */
+        var colorSwatches = document.querySelectorAll('#search-color-filter .color-swatch');
+        for (var cs = 0; cs < colorSwatches.length; cs++) {
+            colorSwatches[cs].addEventListener('click', function() {
+                var all = document.querySelectorAll('#search-color-filter .color-swatch');
+                for (var j = 0; j < all.length; j++) {
+                    all[j].style.outline = 'none';
+                }
+                this.style.outline = '3px solid #FFD700';
+            });
+        }
+        document.getElementById('search-color-clear').addEventListener('click', function() {
+            var all = document.querySelectorAll('#search-color-filter .color-swatch');
+            for (var j = 0; j < all.length; j++) {
+                all[j].style.outline = 'none';
+            }
+        });
+
+        /* ---- Settings panel ---- */
+        document.getElementById('settings-btn').addEventListener('click', function() {
+            openPanel('settings-panel', 'settings-panel-overlay');
+            /* Always show main menu when opening */
+            document.getElementById('settings-main').style.display = 'block';
+            var subs = document.querySelectorAll('.settings-sub');
+            for (var i = 0; i < subs.length; i++) subs[i].style.display = 'none';
+        });
+        document.getElementById('settings-panel-close').addEventListener('click', function() {
+            closePanel('settings-panel', 'settings-panel-overlay');
+        });
+        document.getElementById('settings-panel-overlay').addEventListener('click', function() {
+            closePanel('settings-panel', 'settings-panel-overlay');
+        });
+
+        /* Settings: two-level navigation */
+        var navItems = document.querySelectorAll('.settings-nav-item');
+        for (var ni = 0; ni < navItems.length; ni++) {
+            navItems[ni].addEventListener('click', function() {
+                var section = this.getAttribute('data-section');
+                var targetId = 'settings-' + section;
+                var target = document.getElementById(targetId);
+                if (target) {
+                    document.getElementById('settings-main').style.display = 'none';
+                    target.style.display = 'block';
+                }
+            });
+        }
+
+        /* Settings: back buttons */
+        var backBtns = document.querySelectorAll('.settings-back-btn');
+        for (var bb = 0; bb < backBtns.length; bb++) {
+            backBtns[bb].addEventListener('click', function() {
+                var subs = document.querySelectorAll('.settings-sub');
+                for (var i = 0; i < subs.length; i++) subs[i].style.display = 'none';
+                document.getElementById('settings-main').style.display = 'block';
+            });
+        }
+
+        /* Settings: Security logout */
+        document.getElementById('security-logout-btn').addEventListener('click', function() {
+            Auth.fullLogout();
+        });
+
+        /* ---- Context Menu ---- */
+        var contextMenu = document.getElementById('context-menu');
+        var movetoMenu = document.getElementById('moveto-menu');
+
+        /* Right-click on canvas container */
+        document.getElementById('canvas-container').addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+
+            var pointer = Board.canvas.getPointer(e);
+            var target = Board.canvas.findTarget(e);
+            var activeGroup = Board.canvas.getActiveObjects();
+
+            /* Hide all groups first */
+            document.getElementById('ctx-empty').style.display = 'none';
+            document.getElementById('ctx-element').style.display = 'none';
+            document.getElementById('ctx-multi').style.display = 'none';
+
+            if (activeGroup && activeGroup.length > 1) {
+                document.getElementById('ctx-multi').style.display = 'block';
+            } else if (target) {
+                document.getElementById('ctx-element').style.display = 'block';
+                var stickerBtn = document.querySelector('[data-action="ctx-save-sticker"]');
+                stickerBtn.style.display = (target.customType === 'note') ? 'block' : 'none';
+            } else {
+                document.getElementById('ctx-empty').style.display = 'block';
+            }
+
+            contextMenu.style.left = e.clientX + 'px';
+            contextMenu.style.top = e.clientY + 'px';
+            contextMenu.style.display = 'block';
+
+            contextMenu._pointer = pointer;
+            contextMenu._target = target;
+        });
+
+        /* Close context menu on click anywhere else */
+        document.addEventListener('click', function(e) {
+            if (!contextMenu.contains(e.target)) {
+                contextMenu.style.display = 'none';
+                movetoMenu.style.display = 'none';
+            }
+        });
+
+        /* Context menu item clicks */
+        var ctxItems = document.querySelectorAll('.ctx-item');
+        for (var ci = 0; ci < ctxItems.length; ci++) {
+            ctxItems[ci].addEventListener('click', function(e) {
+                var action = this.getAttribute('data-action');
+
+                switch (action) {
+                    case 'ctx-add-note':
+                        if (contextMenu._pointer) {
+                            Notes.createNoteAt(contextMenu._pointer.x, contextMenu._pointer.y);
+                        }
+                        break;
+                    case 'ctx-add-label':
+                        if (contextMenu._pointer) {
+                            Board.createLabel('Label', contextMenu._pointer.x, contextMenu._pointer.y);
+                        }
+                        break;
+                    case 'ctx-add-decoration':
+                        App.showToast('Decoration panel coming in a future phase.', { duration: 2000 });
+                        break;
+                    case 'ctx-paste':
+                        App.showToast('Paste functionality coming in a future phase.', { duration: 2000 });
+                        break;
+                    case 'ctx-delete':
+                        if (contextMenu._target) {
+                            if (contextMenu._target.customType === 'note') {
+                                Notes.deleteNote(contextMenu._target);
+                            } else {
+                                Notes.deleteElement(contextMenu._target);
+                            }
+                        }
+                        break;
+                    case 'ctx-duplicate':
+                        if (contextMenu._target) {
+                            if (contextMenu._target.customType === 'note') {
+                                Notes.duplicateNote(contextMenu._target);
+                            } else if (contextMenu._target.customType === 'label') {
+                                Notes.duplicateLabel(contextMenu._target);
+                            }
+                        }
+                        break;
+                    case 'ctx-lock':
+                        App.showToast('Lock/unlock coming in a future phase.', { duration: 2000 });
+                        break;
+                    case 'ctx-save-sticker':
+                        App.showToast('Save as Sticker coming in a future phase.', { duration: 2000 });
+                        break;
+                    case 'ctx-move-to':
+                        e.stopPropagation();
+                        showMoveToMenu(this);
+                        return;
+                    case 'ctx-change-color':
+                        App.showToast('Multi-select color change coming in a future phase.', { duration: 2000 });
+                        break;
+                    case 'ctx-lock-all':
+                        App.showToast('Lock/unlock all coming in a future phase.', { duration: 2000 });
+                        break;
+                    case 'ctx-copy':
+                        App.showToast('Copy coming in a future phase.', { duration: 2000 });
+                        break;
+                    case 'ctx-cut':
+                        App.showToast('Cut coming in a future phase.', { duration: 2000 });
+                        break;
+                    case 'ctx-delete-all':
+                        App.showToast('Delete all coming in a future phase.', { duration: 2000 });
+                        break;
+                }
+
+                contextMenu.style.display = 'none';
+                movetoMenu.style.display = 'none';
+            });
+        }
+
+        /* ---- Move-To Sub-Menu ---- */
+        function showMoveToMenu(triggerEl) {
+            movetoMenu.innerHTML = '';
+
+            for (var i = 0; i < Board.boards.length; i++) {
+                if (i === Board.currentBoardIndex) continue;
+
+                var btn = document.createElement('button');
+                btn.className = 'ctx-item';
+                btn.textContent = Board.boards[i].name;
+                btn.setAttribute('data-board-index', String(i));
+                btn.addEventListener('click', function() {
+                    var idx = parseInt(this.getAttribute('data-board-index'));
+                    var target = contextMenu._target;
+                    if (target && target.customType === 'note') {
+                        Board.moveNoteToBoard(target, idx);
+                    } else {
+                        App.showToast('Only notes can be moved between boards.', { duration: 2000 });
+                    }
+                    contextMenu.style.display = 'none';
+                    movetoMenu.style.display = 'none';
+                });
+                movetoMenu.appendChild(btn);
+            }
+
+            if (movetoMenu.children.length === 0) {
+                var noBoards = document.createElement('p');
+                noBoards.textContent = 'No other boards available.';
+                noBoards.style.cssText = 'padding:8px 12px;color:#A0A0BC;font-size:0.85rem;margin:0;';
+                movetoMenu.appendChild(noBoards);
+            }
+
+            var rect = triggerEl.getBoundingClientRect();
+            movetoMenu.style.left = (rect.right + 2) + 'px';
+            movetoMenu.style.top = rect.top + 'px';
+            movetoMenu.style.display = 'block';
+
+            var menuRect = movetoMenu.getBoundingClientRect();
+            if (menuRect.right > window.innerWidth - 10) {
+                movetoMenu.style.left = (rect.left - menuRect.width - 2) + 'px';
+            }
+        }
+
+        /* ---- Long-press for touch context menu ---- */
+        (function() {
+            var longPressTimer = null;
+
+            var canvasEl = document.getElementById('canvas-container');
+
+            canvasEl.addEventListener('touchstart', function(e) {
+                if (e.touches.length !== 1) return;
+
+                longPressTimer = setTimeout(function() {
+                    var touch = e.touches[0];
+                    var fakeEvent = {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY,
+                        preventDefault: function() {}
+                    };
+
+                    var pointer = Board.canvas.getPointer(fakeEvent);
+                    var target = Board.canvas.findTarget(fakeEvent);
+                    var activeGroup = Board.canvas.getActiveObjects();
+
+                    document.getElementById('ctx-empty').style.display = 'none';
+                    document.getElementById('ctx-element').style.display = 'none';
+                    document.getElementById('ctx-multi').style.display = 'none';
+
+                    if (activeGroup && activeGroup.length > 1) {
+                        document.getElementById('ctx-multi').style.display = 'block';
+                    } else if (target) {
+                        document.getElementById('ctx-element').style.display = 'block';
+                        var stickerBtn = document.querySelector('[data-action="ctx-save-sticker"]');
+                        stickerBtn.style.display = (target.customType === 'note') ? 'block' : 'none';
+                    } else {
+                        document.getElementById('ctx-empty').style.display = 'block';
+                    }
+
+                    contextMenu.style.left = touch.clientX + 'px';
+                    contextMenu.style.top = touch.clientY + 'px';
+                    contextMenu.style.display = 'block';
+
+                    contextMenu._pointer = pointer;
+                    contextMenu._target = target;
+
+                }, 500);
+            }, { passive: true });
+
+            canvasEl.addEventListener('touchmove', function() {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+
+            canvasEl.addEventListener('touchend', function() {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+        })();
+
+        /* ---- Initialize Auth ---- */
         Auth.init();
     </script>
 </body>
