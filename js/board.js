@@ -16,6 +16,7 @@ var Board = {
     currentBoardIndex: -1,
     boardDropdownOpen: false,
     isReady: false,
+    labelCrosshairMode: false,
 
     init: function() {
         var container = document.getElementById('canvas-container');
@@ -54,7 +55,10 @@ var Board = {
             objects: null,
             zoomLevel: 1,
             panX: 0,
-            panY: 0
+            panY: 0,
+            bgColor: '#2a2a4a',
+            bgImageUrl: null,
+            bgImageMode: 'stretch'
         };
 
         this.boards.push(board);
@@ -66,7 +70,7 @@ var Board = {
 
         this.currentBoardIndex = newIndex;
         this.canvas.clear();
-        this.canvas.setBackgroundColor('#2a2a4a', function() {});
+        this.canvas.setBackgroundColor(board.bgColor, function() {});
         this.zoomLevel = 1;
         this.canvas.setZoom(1);
         this.canvas.absolutePan(new fabric.Point(0, 0));
@@ -84,11 +88,15 @@ var Board = {
         if (index < 0 || index >= this.boards.length) return;
         if (index === this.currentBoardIndex) return;
 
-        if (Notes && Notes.editingNote) {
+        if (typeof Notes !== 'undefined' && Notes.editingNote) {
             Notes.exitEditMode();
         }
-        if (Notes) {
+        if (typeof Notes !== 'undefined' && Notes.editingLabel) {
+            Notes.exitLabelEditMode();
+        }
+        if (typeof Notes !== 'undefined') {
             Notes.hideActionBar();
+            Notes.hideLabelActionBar();
         }
 
         this.saveCurrentBoardState();
@@ -96,7 +104,8 @@ var Board = {
         var board = this.boards[index];
 
         this.canvas.clear();
-        this.canvas.setBackgroundColor('#2a2a4a', function() {});
+        this.canvas.setBackgroundColor(board.bgColor || '#2a2a4a', function() {});
+        this.canvas.setBackgroundImage(null, function() {});
 
         if (board.objects && board.objects.objects && board.objects.objects.length > 0) {
             var self = this;
@@ -104,12 +113,22 @@ var Board = {
                 self.zoomLevel = board.zoomLevel || 1;
                 self.canvas.setZoom(self.zoomLevel);
                 self.canvas.absolutePan(new fabric.Point(board.panX || 0, board.panY || 0));
+
+                if (board.bgImageUrl) {
+                    self.applyBackgroundImage(board.bgImageUrl, board.bgImageMode);
+                }
+
                 self.canvas.renderAll();
             });
         } else {
             this.zoomLevel = 1;
             this.canvas.setZoom(1);
             this.canvas.absolutePan(new fabric.Point(0, 0));
+
+            if (board.bgImageUrl) {
+                this.applyBackgroundImage(board.bgImageUrl, board.bgImageMode);
+            }
+
             this.placeDefaultElements();
         }
 
@@ -136,6 +155,246 @@ var Board = {
             board.panX = vpt[4];
             board.panY = vpt[5];
         }
+    },
+
+    setBackgroundColor: function(color) {
+        if (this.currentBoardIndex < 0) return;
+        this.boards[this.currentBoardIndex].bgColor = color;
+        this.canvas.setBackgroundColor(color, function() {});
+        this.canvas.renderAll();
+    },
+
+    setBackgroundImage: function(imageUrl, mode) {
+        if (this.currentBoardIndex < 0) return;
+        mode = mode || 'stretch';
+        this.boards[this.currentBoardIndex].bgImageUrl = imageUrl;
+        this.boards[this.currentBoardIndex].bgImageMode = mode;
+        this.applyBackgroundImage(imageUrl, mode);
+    },
+
+    applyBackgroundImage: function(imageUrl, mode) {
+        var self = this;
+
+        if (!imageUrl) {
+            this.canvas.setBackgroundImage(null, function() {
+                self.canvas.renderAll();
+            });
+            return;
+        }
+
+        fabric.Image.fromURL(imageUrl, function(img) {
+            if (!img) return;
+
+            if (mode === 'tile') {
+                var patternSourceCanvas = new fabric.StaticCanvas(null, {
+                    width: img.width,
+                    height: img.height
+                });
+                patternSourceCanvas.add(img);
+                patternSourceCanvas.renderAll();
+
+                var pattern = new fabric.Pattern({
+                    source: patternSourceCanvas.getElement(),
+                    repeat: 'repeat'
+                });
+
+                self.canvas.setBackgroundColor(pattern, function() {
+                    self.canvas.renderAll();
+                });
+            } else {
+                img.set({
+                    scaleX: self.canvas.getWidth() / img.width,
+                    scaleY: self.canvas.getHeight() / img.height
+                });
+                self.canvas.setBackgroundImage(img, function() {
+                    self.canvas.renderAll();
+                });
+            }
+        }, { crossOrigin: 'anonymous' });
+    },
+
+    removeBackgroundImage: function() {
+        if (this.currentBoardIndex < 0) return;
+        this.boards[this.currentBoardIndex].bgImageUrl = null;
+        this.boards[this.currentBoardIndex].bgImageMode = 'stretch';
+        this.canvas.setBackgroundImage(null, function() {});
+        this.canvas.renderAll();
+    },
+
+    deleteBoard: function(index) {
+        if (index < 0 || index >= this.boards.length) return;
+        if (this.boards.length <= 1) {
+            App.showToast('Cannot delete the only board.', { duration: 2000 });
+            return;
+        }
+
+        var self = this;
+        var boardName = this.boards[index].name;
+
+        App.showConfirm('Delete board "' + boardName + '"? All notes will be archived.', function() {
+            if (index === self.currentBoardIndex) {
+                self.saveCurrentBoardState();
+            }
+
+            var board = self.boards[index];
+            if (board.objects && board.objects.objects) {
+                for (var i = 0; i < board.objects.objects.length; i++) {
+                    var obj = board.objects.objects[i];
+                    if (obj.customType === 'note' && obj.noteData) {
+                        obj.noteData.archived = true;
+                        obj.noteData.archivedAt = new Date().toISOString();
+                        obj.noteData.archivedFromBoard = boardName;
+                    }
+                }
+            }
+
+            self.boards.splice(index, 1);
+
+            if (self.currentBoardIndex >= self.boards.length) {
+                self.currentBoardIndex = self.boards.length - 1;
+            }
+            if (self.currentBoardIndex === index) {
+                self.currentBoardIndex = Math.max(0, index - 1);
+            } else if (self.currentBoardIndex > index) {
+                self.currentBoardIndex--;
+            }
+
+            var newBoard = self.boards[self.currentBoardIndex];
+            self.canvas.clear();
+            self.canvas.setBackgroundColor(newBoard.bgColor || '#2a2a4a', function() {});
+
+            if (newBoard.objects && newBoard.objects.objects && newBoard.objects.objects.length > 0) {
+                self.canvas.loadFromJSON(newBoard.objects, function() {
+                    self.zoomLevel = newBoard.zoomLevel || 1;
+                    self.canvas.setZoom(self.zoomLevel);
+                    self.canvas.absolutePan(new fabric.Point(newBoard.panX || 0, newBoard.panY || 0));
+                    if (newBoard.bgImageUrl) {
+                        self.applyBackgroundImage(newBoard.bgImageUrl, newBoard.bgImageMode);
+                    }
+                    self.canvas.renderAll();
+                });
+            } else {
+                self.zoomLevel = 1;
+                self.canvas.setZoom(1);
+                self.canvas.absolutePan(new fabric.Point(0, 0));
+                self.placeDefaultElements();
+            }
+
+            self.updateBoardName();
+            self.updateBoardCounter();
+            self.updateZoomDisplay();
+            App.showToast('Board "' + boardName + '" deleted. Notes archived.', { duration: 3000 });
+        });
+    },
+
+    moveNoteToBoard: function(noteGroup, targetBoardIndex) {
+        if (!noteGroup || noteGroup.customType !== 'note') return;
+        if (targetBoardIndex < 0 || targetBoardIndex >= this.boards.length) return;
+        if (targetBoardIndex === this.currentBoardIndex) return;
+
+        var noteJSON = noteGroup.toJSON(['customType', 'customId', 'noteData', 'lockUniScaling']);
+
+        this.canvas.remove(noteGroup);
+        this.canvas.discardActiveObject();
+        this.canvas.renderAll();
+
+        var targetBoard = this.boards[targetBoardIndex];
+        if (!targetBoard.objects) {
+            targetBoard.objects = { objects: [] };
+        }
+        if (!targetBoard.objects.objects) {
+            targetBoard.objects.objects = [];
+        }
+        targetBoard.objects.objects.push(noteJSON);
+
+        if (typeof Notes !== 'undefined') {
+            Notes.hideActionBar();
+        }
+
+        App.showToast('Note moved to "' + targetBoard.name + '"', {
+            duration: 5000,
+            onUndo: function() {
+                targetBoard.objects.objects.pop();
+                Board.canvas.add(noteGroup);
+                Board.canvas.renderAll();
+            }
+        });
+    },
+
+    createLabel: function(text, x, y, options) {
+        options = options || {};
+
+        var label = new fabric.IText(text || 'Label', {
+            left: x,
+            top: y,
+            fontFamily: options.fontFamily || 'Fredoka One',
+            fontSize: options.fontSize || 32,
+            fill: options.fill || '#FFD700',
+            shadow: new fabric.Shadow({
+                color: 'rgba(0,0,0,0.3)',
+                blur: 4,
+                offsetX: 2,
+                offsetY: 2
+            }),
+            editable: true,
+            selectable: true,
+            hasControls: true,
+            hasBorders: true,
+            customType: 'label',
+            customId: 'label-' + Date.now()
+        });
+
+        this.canvas.add(label);
+        this.canvas.setActiveObject(label);
+        this.canvas.renderAll();
+        return label;
+    },
+
+    enterLabelCrosshairMode: function() {
+        var self = this;
+        this.labelCrosshairMode = true;
+
+        var container = document.getElementById('canvas-container');
+        container.style.cursor = 'crosshair';
+
+        App.showToast('Click anywhere to place a label. Press Escape to cancel.', { duration: 3000 });
+
+        this._labelCrosshairHandler = function(opt) {
+            if (opt.target) return;
+            var pointer = Board.canvas.getPointer(opt.e);
+            self.createLabel('Label', pointer.x, pointer.y);
+            self.exitLabelCrosshairMode();
+        };
+
+        this.canvas.on('mouse:down', this._labelCrosshairHandler);
+
+        var escHandler = function(e) {
+            if (e.key === 'Escape') {
+                self.exitLabelCrosshairMode();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+        this._labelEscHandler = escHandler;
+    },
+
+    exitLabelCrosshairMode: function() {
+        this.labelCrosshairMode = false;
+
+        var container = document.getElementById('canvas-container');
+        container.style.cursor = 'default';
+
+        if (this._labelCrosshairHandler) {
+            this.canvas.off('mouse:down', this._labelCrosshairHandler);
+            this._labelCrosshairHandler = null;
+        }
+
+        if (this._labelEscHandler) {
+            document.removeEventListener('keydown', this._labelEscHandler);
+            this._labelEscHandler = null;
+        }
+
+        App.hideToast();
     },
 
     placeDefaultElements: function() {
@@ -255,27 +514,20 @@ var Board = {
         dropdown.innerHTML = '';
 
         for (var i = 0; i < this.boards.length; i++) {
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:4px 8px 4px 0;';
+
             var item = document.createElement('button');
             item.textContent = this.boards[i].name;
             item.setAttribute('data-index', String(i));
-            item.style.cssText = 'display:block;width:100%;padding:12px 16px;border:none;background:none;color:#E8E8F0;font-size:0.95rem;font-family:Nunito,sans-serif;text-align:left;cursor:pointer;';
+            item.style.cssText = 'flex:1;padding:8px 16px;border:none;background:none;color:#E8E8F0;font-size:0.95rem;font-family:Nunito,sans-serif;text-align:left;cursor:pointer;';
 
             if (i === this.currentBoardIndex) {
-                item.style.background = '#263354';
                 item.style.fontWeight = '700';
                 item.style.color = '#FFD700';
+                row.style.background = '#263354';
             }
 
-            item.addEventListener('mouseover', function() {
-                if (parseInt(this.getAttribute('data-index')) !== Board.currentBoardIndex) {
-                    this.style.background = '#1F2A48';
-                }
-            });
-            item.addEventListener('mouseout', function() {
-                if (parseInt(this.getAttribute('data-index')) !== Board.currentBoardIndex) {
-                    this.style.background = 'none';
-                }
-            });
             item.addEventListener('click', function(e) {
                 e.stopPropagation();
                 var idx = parseInt(this.getAttribute('data-index'));
@@ -283,7 +535,22 @@ var Board = {
                 Board.closeBoardDropdown();
             });
 
-            dropdown.appendChild(item);
+            var delBtn = document.createElement('button');
+            delBtn.textContent = '\u{2715}';
+            delBtn.setAttribute('data-index', String(i));
+            delBtn.style.cssText = 'width:28px;height:28px;border:none;background:none;color:#6C6C8A;font-size:0.8rem;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;';
+            delBtn.addEventListener('mouseover', function() { this.style.color = '#FF4757'; });
+            delBtn.addEventListener('mouseout', function() { this.style.color = '#6C6C8A'; });
+            delBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var idx = parseInt(this.getAttribute('data-index'));
+                Board.closeBoardDropdown();
+                Board.deleteBoard(idx);
+            });
+
+            row.appendChild(item);
+            row.appendChild(delBtn);
+            dropdown.appendChild(row);
         }
 
         var divider = document.createElement('div');
@@ -583,7 +850,6 @@ var Board = {
 
                 if (dist > 0) {
                     var ratio = dist / lastDist;
-                    // Only apply zoom if the ratio is reasonable (not extreme jumps)
                     if (ratio > 0.5 && ratio < 2) {
                         var newZoom = self.zoomLevel * ratio;
                         if (newZoom < self.minZoom) newZoom = self.minZoom;
