@@ -756,14 +756,9 @@ var Notes = {
             toolbar = document.createElement('div');
             toolbar.id = 'label-edit-toolbar';
 
-            var isPhone = window.innerWidth <= 480;
             toolbar.style.cssText = 'display:none;position:fixed;left:0;right:0;z-index:200;background:#162447;border:1px solid #2A2A4A;padding:8px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.4);';
-            if (isPhone) {
-                toolbar.style.bottom = '0';
-                toolbar.style.borderRadius = '16px 16px 0 0';
-            } else {
-                toolbar.style.top = '52px';
-            }
+            toolbar.style.bottom = '0';
+            toolbar.style.borderRadius = '16px 16px 0 0';
 
             var btnStyle = 'width:32px;height:32px;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;display:inline-flex;align-items:center;justify-content:center;';
             var selStyle = 'padding:4px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-size:0.8rem;font-family:Nunito,sans-serif;';
@@ -804,7 +799,11 @@ var Notes = {
 
             document.getElementById('label-edit-color').addEventListener('input', function() {
                 if (Notes.editingLabel) {
-                    Notes.editingLabel.set('fill', this.value);
+                    if (Notes.editingLabel.customType === 'divider') {
+                        Notes.editingLabel.set('stroke', this.value);
+                    } else {
+                        Notes.editingLabel.set('fill', this.value);
+                    }
                     Board.canvas.renderAll();
                 }
             });
@@ -850,7 +849,11 @@ var Notes = {
         }
 
         if (label) {
-            document.getElementById('label-edit-color').value = label.fill || '#FFD700';
+            if (label.customType === 'divider') {
+                document.getElementById('label-edit-color').value = label.stroke || '#6C6C8A';
+            } else {
+                document.getElementById('label-edit-color').value = label.fill || '#FFD700';
+            }
             document.getElementById('label-edit-font').value = label.fontFamily || 'Fredoka One';
             document.getElementById('label-edit-size').value = String(label.fontSize || 42);
             this.updateLabelFormatButtons();
@@ -883,14 +886,9 @@ var Notes = {
             toolbar = document.createElement('div');
             toolbar.id = 'edit-toolbar';
 
-            var isPhone = window.innerWidth <= 480;
             toolbar.style.cssText = 'display:none;position:fixed;left:0;right:0;z-index:200;background:#162447;border:1px solid #2A2A4A;padding:8px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.4);';
-            if (isPhone) {
-                toolbar.style.bottom = '0';
-                toolbar.style.borderRadius = '16px 16px 0 0';
-            } else {
-                toolbar.style.top = '52px';
-            }
+            toolbar.style.bottom = '0';
+            toolbar.style.borderRadius = '16px 16px 0 0';
 
             var btnStyle = 'width:32px;height:32px;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;display:inline-flex;align-items:center;justify-content:center;';
             var selStyle = 'padding:4px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-size:0.8rem;font-family:Nunito,sans-serif;';
