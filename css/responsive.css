@@ -30,6 +30,14 @@
         right: 20px;
     }
 
+    .floating-btn-left-label {
+        right: 76px;
+        bottom: 20px;
+        width: 48px;
+        height: 48px;
+        font-size: 1.2rem;
+    }
+
     .zoom-widget {
         bottom: 20px;
         left: 16px;
@@ -64,7 +72,6 @@
         margin-bottom: 28px;
     }
 
-    /* Top bar: truncate board name at ~5 chars */
     .board-name {
         max-width: 90px;
         padding: 5px 8px;
@@ -93,7 +100,6 @@
         font-size: 1.2rem;
     }
 
-    /* Settings hides into overflow on very small screens */
     #settings-btn {
         display: none;
     }
@@ -107,6 +113,21 @@
         font-size: 1.1rem;
         bottom: 16px;
         right: 16px;
+    }
+
+    .floating-btn-left-label {
+        right: 70px;
+        bottom: 16px;
+        width: 46px;
+        height: 46px;
+        font-size: 1.1rem;
+    }
+
+    .context-menu {
+        left: 10px !important;
+        right: 10px;
+        min-width: auto;
+        max-width: calc(100% - 20px);
     }
 
     .zoom-widget {
@@ -172,7 +193,6 @@
 
 /* ---- Touch device adjustments ---- */
 @media (hover: none) and (pointer: coarse) {
-    /* Larger touch targets */
     .icon-btn {
         min-width: 42px;
         min-height: 42px;
@@ -192,7 +212,6 @@
         padding: 15px;
     }
 
-    /* No hover states on touch */
     .icon-btn:hover,
     .board-name:hover,
     .zoom-btn:hover,
@@ -233,6 +252,13 @@
     .floating-btn {
         bottom: 12px;
         right: 12px;
+        width: 42px;
+        height: 42px;
+    }
+
+    .floating-btn-left-label {
+        right: 62px;
+        bottom: 12px;
         width: 42px;
         height: 42px;
     }
