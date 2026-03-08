@@ -1105,6 +1105,56 @@
         /* ---- Initialize Auth ---- */
         Auth.init();
         App.init();
+        /* ---- Debug Console (temporary) ---- */
+        (function() {
+            var debugBox = document.createElement('div');
+            debugBox.id = 'debug-box';
+            debugBox.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.9);color:#FF4757;font-family:monospace;font-size:12px;padding:8px;z-index:9999;display:none;';
+            document.body.appendChild(debugBox);
+
+            var toggleBtn = document.createElement('button');
+            toggleBtn.textContent = 'DBG';
+            toggleBtn.style.cssText = 'position:fixed;top:4px;left:4px;z-index:10000;background:#FF4757;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;font-family:monospace;cursor:pointer;';
+            toggleBtn.addEventListener('click', function() {
+                debugBox.style.display = debugBox.style.display === 'none' ? 'block' : 'none';
+            });
+            document.body.appendChild(toggleBtn);
+
+            function logDebug(msg, color) {
+                var line = document.createElement('div');
+                line.style.cssText = 'padding:2px 0;border-bottom:1px solid #333;color:' + (color || '#FF4757') + ';';
+                line.textContent = msg;
+                debugBox.appendChild(line);
+                debugBox.scrollTop = debugBox.scrollHeight;
+                debugBox.style.display = 'block';
+            }
+
+            window.onerror = function(msg, url, line, col, error) {
+                logDebug('ERROR: ' + msg + ' (line ' + line + ')');
+            };
+
+            var origConsoleError = console.error;
+            console.error = function() {
+                var args = Array.prototype.slice.call(arguments);
+                logDebug('ERROR: ' + args.join(' '));
+                origConsoleError.apply(console, arguments);
+            };
+
+            var origConsoleWarn = console.warn;
+            console.warn = function() {
+                var args = Array.prototype.slice.call(arguments);
+                logDebug('WARN: ' + args.join(' '), '#FFA502');
+                origConsoleWarn.apply(console, arguments);
+            };
+
+            var origConsoleLog = console.log;
+            console.log = function() {
+                var args = Array.prototype.slice.call(arguments);
+                logDebug('LOG: ' + args.join(' '), '#2ED573');
+                origConsoleLog.apply(console, arguments);
+            };
+        })();
+
     </script>
 </body>
 </html>
