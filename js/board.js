@@ -28,6 +28,9 @@ var Board = {
             height: height,
             backgroundColor: '#2a2a4a',
             selection: true,
+                        selectionColor: 'rgba(255,215,0,0.15)',
+            selectionBorderColor: '#FFD700',
+            selectionLineWidth: 2,
             preserveObjectStacking: true,
             allowTouchScrolling: false
         });
