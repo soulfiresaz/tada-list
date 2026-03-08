@@ -17,6 +17,9 @@ var Board = {
     boardDropdownOpen: false,
     isReady: false,
     labelCrosshairMode: false,
+    homeZoom: 1,
+    homePanX: 0,
+    homePanY: 0,
 
     init: function() {
         var container = document.getElementById('canvas-container');
@@ -47,6 +50,14 @@ var Board = {
 
         this.isReady = true;
         this.addNewBoard('My Board');
+        this.homeZoom = this.zoomLevel;
+        this.homePanX = 0;
+        this.homePanY = 0;
+
+        var self = this;
+        document.getElementById('zoom-home-btn').addEventListener('click', function() {
+            self.goHome();
+        });
 
         console.log('Board initialized');
     },
@@ -898,6 +909,13 @@ var Board = {
         if (newZoom > this.maxZoom) newZoom = this.maxZoom;
         this.zoomLevel = newZoom;
         this.canvas.zoomToPoint(point, newZoom);
+        this.updateZoomDisplay();
+    },
+
+    goHome: function() {
+        this.zoomLevel = this.homeZoom;
+        this.canvas.setZoom(this.homeZoom);
+        this.canvas.absolutePan(new fabric.Point(this.homePanX, this.homePanY));
         this.updateZoomDisplay();
     },
 
