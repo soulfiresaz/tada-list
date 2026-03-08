@@ -603,6 +603,28 @@ input {
     to { transform: rotate(360deg); }
 }
 
+/* ---- Home Button ---- */
+.home-btn {
+    position: fixed;
+    bottom: 28px;
+    left: 250px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    z-index: 90;
+    box-shadow: var(--shadow-sm);
+    transition: background var(--transition-fast);
+}
+
+.home-btn:hover {
+    background: var(--bg-surface-hover);
+}
 
 /* ============================================
    TOAST NOTIFICATION
