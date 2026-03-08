@@ -405,7 +405,7 @@ var Notes = {
         var rect = canvasEl.getBoundingClientRect();
 
         var left = bound.left + bound.width / 2 - 70 + rect.left;
-        var top = bound.top + bound.height + 10 + rect.top;
+        var top = bound.top + bound.height + 40 + rect.top;
 
         if (left < 10) left = 10;
         if (left + 140 > window.innerWidth) left = window.innerWidth - 150;
@@ -757,10 +757,9 @@ var Notes = {
             toolbar.id = 'label-edit-toolbar';
 
             toolbar.style.cssText = 'display:none;position:fixed;left:0;right:0;z-index:200;background:#162447;border:1px solid #2A2A4A;padding:8px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.4);';
-            toolbar.style.bottom = '0';
-            toolbar.style.borderRadius = '16px 16px 0 0';
+                        toolbar.style.top = '52px';
 
-            var btnStyle = 'width:32px;height:32px;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;display:inline-flex;align-items:center;justify-content:center;';
+        var btnStyle = 'width:32px;height:32px;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;display:inline-flex;align-items:center;justify-content:center;';
             var selStyle = 'padding:4px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-size:0.8rem;font-family:Nunito,sans-serif;';
             var lblStyle = 'color:#A0A0BC;font-size:0.7rem;';
 
@@ -887,8 +886,7 @@ var Notes = {
             toolbar.id = 'edit-toolbar';
 
             toolbar.style.cssText = 'display:none;position:fixed;left:0;right:0;z-index:200;background:#162447;border:1px solid #2A2A4A;padding:8px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.4);';
-            toolbar.style.bottom = '0';
-            toolbar.style.borderRadius = '16px 16px 0 0';
+                        toolbar.style.top = '52px';
 
             var btnStyle = 'width:32px;height:32px;border:1px solid #3A3A5A;background:#1F2A48;color:#E8E8F0;border-radius:6px;cursor:pointer;font-size:0.9rem;display:inline-flex;align-items:center;justify-content:center;';
             var selStyle = 'padding:4px;background:#1F2A48;color:#E8E8F0;border:1px solid #3A3A5A;border-radius:6px;font-size:0.8rem;font-family:Nunito,sans-serif;';
