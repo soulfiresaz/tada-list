@@ -358,7 +358,7 @@ input {
     display: flex;
     align-items: center;
     gap: 10px;
-    min-width: 0; /* Allow truncation */
+    min-width: 0;
 }
 
 .top-bar-right {
@@ -712,4 +712,115 @@ input {
 
 .popup-buttons button {
     flex: 1;
+}
+
+
+/* ============================================
+   LABEL FLOATING BUTTON
+   ============================================ */
+.floating-btn-left-label {
+    bottom: 24px;
+    right: 86px;
+    background: var(--success);
+}
+
+.floating-btn-left-label:hover {
+    background: #28c76f;
+}
+
+
+/* ============================================
+   CONTEXT MENU
+   ============================================ */
+.context-menu {
+    position: fixed;
+    z-index: 300;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    min-width: 200px;
+    padding: 6px 0;
+    animation: fadeIn 0.15s ease;
+}
+
+.ctx-group {
+    /* Groups shown/hidden based on context */
+}
+
+.ctx-item {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: 'Nunito', sans-serif;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.ctx-item:hover {
+    background: var(--bg-surface-hover);
+}
+
+.ctx-item:first-child {
+    border-radius: 12px 12px 0 0;
+}
+
+.ctx-item:last-child {
+    border-radius: 0 0 12px 12px;
+}
+
+
+/* ============================================
+   BUTTON VARIANTS (used in panels)
+   ============================================ */
+.btn-small {
+    padding: 6px 14px;
+    background: var(--accent);
+    color: var(--bg-primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    font-family: 'Nunito', sans-serif;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.btn-small:hover {
+    background: var(--accent-hover);
+}
+
+.btn-muted {
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-weight: 600;
+    border: 1px solid var(--border);
+}
+
+.btn-muted:hover {
+    background: var(--bg-surface-hover);
+    color: var(--text-primary);
+}
+
+.btn-danger-outline {
+    padding: 10px 16px;
+    background: none;
+    color: var(--danger);
+    font-weight: 700;
+    font-size: 0.9rem;
+    font-family: 'Nunito', sans-serif;
+    border: 2px solid var(--danger);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-danger-outline:hover {
+    background: var(--danger);
+    color: white;
 }
