@@ -180,6 +180,7 @@
                     <input type="color" id="theme-bg-color" value="#2a2a4a" class="panel-color-input">
                     <span id="theme-bg-color-hex" class="panel-color-hex">#2a2a4a</span>
                     <button id="theme-bg-color-apply" class="btn-small">Apply</button>
+                                    <button id="theme-bg-color-panel" class="btn-small btn-muted" style="margin-left:4px;" onclick="ColorPanel.open('bg', function(color){ if(color){ document.getElementById('theme-bg-color').value=color; document.getElementById('theme-bg-color-hex').textContent=color; Board.setBackgroundColor(color); }})">More Colors</button>
                 </div>
             </div>
 
