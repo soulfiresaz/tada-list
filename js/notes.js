@@ -787,8 +787,14 @@ var Notes = {
                 + '<button id="label-edit-italic" class="label-fmt-btn" data-fmt="italic" style="' + btnStyle + 'font-style:italic;">I</button>'
                 + '<button id="label-edit-underline" class="label-fmt-btn" data-fmt="underline" style="' + btnStyle + 'text-decoration:underline;">U</button>'
                 + '<button id="label-edit-strike" class="label-fmt-btn" data-fmt="strikethrough" style="' + btnStyle + 'text-decoration:line-through;">S</button>'
+                + '<select id="label-edit-align" style="' + selStyle + '">'
+                + '<option value="left">Left</option>'
+                + '<option value="center">Center</option>'
+                + '<option value="right">Right</option>'
+                + '</select>'
                 + '</div>'
                 + '</div>';
+
 
             document.body.appendChild(toolbar);
 
@@ -820,6 +826,14 @@ var Notes = {
                     Board.canvas.renderAll();
                 }
             });
+
+                        document.getElementById('label-edit-align').addEventListener('change', function() {
+                if (Notes.editingLabel) {
+                    Notes.editingLabel.set('textAlign', this.value);
+                    Board.canvas.renderAll();
+                }
+            });
+
 
             var fmtBtns = document.querySelectorAll('.label-fmt-btn');
             for (var i = 0; i < fmtBtns.length; i++) {
@@ -854,7 +868,8 @@ var Notes = {
                 document.getElementById('label-edit-color').value = label.fill || '#FFD700';
             }
             document.getElementById('label-edit-font').value = label.fontFamily || 'Fredoka One';
-            document.getElementById('label-edit-size').value = String(label.fontSize || 42);
+                        document.getElementById('label-edit-size').value = String(label.fontSize || 42);
+            document.getElementById('label-edit-align').value = label.textAlign || 'left';
             this.updateLabelFormatButtons();
         }
 
